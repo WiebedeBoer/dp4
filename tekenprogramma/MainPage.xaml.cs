@@ -5,18 +5,27 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 using Windows.UI.Input;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
+//using System.Windows.Controls;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace tekenprogramma
 {
     public sealed partial class MainPage : Page
     {
         string type = "Rectangle";
-        double cpx;
-        double cpy;
-        bool firstcp = true;
-        bool moving = false;
+        bool selecting = false;
+        bool grouping = false;
         Rectangle backuprectangle;
         Ellipse backupellipse;
+
+        public Invoker invoker = new Invoker();
+        public List<Shape> selectedShapesList = new List<Shape>();
+        public FrameworkElement selectedElement;
+        public List<FrameworkElement> selectElementsList = new List<FrameworkElement>();
 
         public MainPage()
         {
@@ -25,194 +34,386 @@ namespace tekenprogramma
 
         private void Drawing_pressed(object sender, PointerRoutedEventArgs e)
         {
-            FrameworkElement backupprep = e.OriginalSource as FrameworkElement;
-            if (backupprep.Name == "Rectangle")
+            //if grouping on
+            if (grouping == true)
             {
-                Rectangle tmp = backupprep as Rectangle;
-                backuprectangle = tmp;
-                type = "Rectangle";
+                grouped(sender, e);
             }
-            else if(backupprep.Name == "Ellipse")
-            {
-                Ellipse tmp = backupprep as Ellipse;
-                backupellipse = tmp;
-                type = "Ellipse";
-            }
-            if (moving)
-            {
-                cpx = e.GetCurrentPoint(paintSurface).Position.X;
-                cpy = e.GetCurrentPoint(paintSurface).Position.Y;
-                if (type == "Rectangle")
-                {
-                    Canvas.SetLeft(backuprectangle, cpx);
-                    Canvas.SetTop(backuprectangle, cpy);
-                    paintSurface.Children.Remove(backuprectangle);
-                    paintSurface.Children.Add(backuprectangle);
-                }
-                else if(type == "Ellipse")
-                {
-                    Canvas.SetLeft(backupellipse, cpx);
-                    Canvas.SetTop(backupellipse, cpy);
-                    paintSurface.Children.Remove(backupellipse);
-                    paintSurface.Children.Add(backupellipse);
-                }
-                moving = !moving;
-            }
+            //common shapes
             else
             {
-                if (firstcp)
+                non_grouped(sender, e);
+            }
+
+        }
+
+        //grouped
+        private void non_grouped(object sender, PointerRoutedEventArgs e)
+        {
+            //selecting false
+            if (selecting == false)
+            {
+                //select shapes
+                FrameworkElement backupprep = e.OriginalSource as FrameworkElement;
+                if (backupprep.Name == "Rectangle")
                 {
-                    cpx = e.GetCurrentPoint(paintSurface).Position.X;
-                    cpy = e.GetCurrentPoint(paintSurface).Position.Y;
+                    Rectangle tmp = backupprep as Rectangle;
+                    backuprectangle = tmp;
+                    double top = (double)tmp.GetValue(Canvas.TopProperty);
+                    double left = (double)tmp.GetValue(Canvas.LeftProperty);
+                    double width = tmp.Width;
+                    double height = tmp.Height;
+                    Shape shape = new Shape(left, top, width, height);
+                    ICommand select = new Select(shape, e);
+                    this.invoker.Execute(select);
+                    //selecting = true;
+                    selectedShapesList.Add(shape);
+                    selectedElement = tmp;
+                    selectElementsList.Add(selectedElement);
+                }
+                else if (backupprep.Name == "Ellipse")
+                {
+                    Ellipse tmp = backupprep as Ellipse;
+                    backupellipse = tmp;
+                    double top = (double)tmp.GetValue(Canvas.TopProperty);
+                    double left = (double)tmp.GetValue(Canvas.LeftProperty);
+                    double width = tmp.Width;
+                    double height = tmp.Height;
+                    Shape shape = new Shape(left, top, width, height);
+                    ICommand select = new Select(shape, e);
+                    this.invoker.Execute(select);
+                    //selecting = true;
+                    selectedShapesList.Add(shape);
+                    selectedElement = tmp;
+                    selectElementsList.Add(selectedElement);
                 }
                 else
                 {
+                    //make shapes
                     if (type == "Rectangle")
                     {
-                        MakeRectangle(e.GetCurrentPoint(paintSurface).Position.X, e.GetCurrentPoint(paintSurface).Position.Y);
+                        MakeRectangle(sender, e);
+                        selectElementsList.Clear();
                     }
-                    else
+                    else if (type == "Elipse")
                     {
-                        MakeEllipse(e.GetCurrentPoint(paintSurface).Position.X, e.GetCurrentPoint(paintSurface).Position.Y);
+                        MakeEllipse(sender, e);
+                        selectElementsList.Clear();
                     }
                 }
-                firstcp = !firstcp;
+            }
+            //selecting true
+            else
+            {
+
+                //move
+                if (type == "Move")
+                {
+                    movingShape(sender, e);
+                    selectElementsList.Clear();
+                }
+                //resize
+                else if (type == "Resize")
+                {
+                    resizingShape(sender, e);
+                    selectElementsList.Clear();
+                }
+
+
+
             }
         }
 
-        public void MakeRectangle(double left, double top)
+        //non grouped
+        private void grouped(object sender, PointerRoutedEventArgs e)
         {
-            Rectangle newRectangle = new Rectangle();
-            newRectangle.Height = Math.Abs(cpy - top);
-            newRectangle.Width = Math.Abs(cpx - left);
-            SolidColorBrush brush = new SolidColorBrush();
-            brush.Color = Windows.UI.Colors.Blue;
-            newRectangle.Fill = brush;
-            newRectangle.Name = "Rectangle";
-            Canvas.SetLeft(newRectangle, ReturnSmallest(left, cpx));
-            Canvas.SetTop(newRectangle, ReturnSmallest(top, cpy));
-            newRectangle.PointerPressed += Drawing_pressed;
-            paintSurface.Children.Add(newRectangle);
-            Rectangle.Content = paintSurface.Children[0].Opacity;
-        }
-
-        public void MakeEllipse(double left, double top)
-        {
-            Ellipse newEllipse = new Ellipse();
-            newEllipse.Height = Math.Abs(cpy - top);
-            newEllipse.Width = Math.Abs(cpx - left);
-            SolidColorBrush brush = new SolidColorBrush();
-            brush.Color = Windows.UI.Colors.Blue;
-            newEllipse.Fill = brush;
-            newEllipse.Name = "Ellipse";
-            Canvas.SetLeft(newEllipse, ReturnSmallest(left, cpx));
-            Canvas.SetTop(newEllipse, ReturnSmallest(top, cpy));
-            newEllipse.PointerPressed += Drawing_pressed;
-            paintSurface.Children.Add(newEllipse);
-        }
-        
-        private void Move_Click(object sender, RoutedEventArgs e)
-        {
-            moving = !moving;
-        }
-
-        private void Resize_Click(object sender, RoutedEventArgs e)
-        {
-            if (type == "Rectangle")
+            //selecting
+            if (selecting == false)
             {
-                paintSurface.Children.Remove(backuprectangle);
-                paintSurface.Children.Add(backuprectangle);
-            }
-            else if (type == "Ellipse")
-            {
-                paintSurface.Children.Remove(backupellipse);
-                backupellipse.Height = Convert.ToDouble(Height.Text);
-                backupellipse.Width = Convert.ToDouble(Width.Text);
-                paintSurface.Children.Add(backupellipse);
-            }
-        }
+                //select shapes
+                FrameworkElement backupprep = e.OriginalSource as FrameworkElement;
+                if (backupprep.Name == "Rectangle")
+                {
+                    Rectangle tmp = backupprep as Rectangle;
+                    backuprectangle = tmp;
+                    double top = (double)tmp.GetValue(Canvas.TopProperty);
+                    double left = (double)tmp.GetValue(Canvas.LeftProperty);
+                    double width = tmp.Width;
+                    double height = tmp.Height;
+                    selecting = true;
+                    //selectedShapesList.Add(shape);
+                    selectedElement = tmp;
+                    selectElementsList.Add(selectedElement);
+                    Group group = new Group(left, top, width, height, "rectangle", 0, 0, paintSurface, invoker, selectedElement);
+                    ICommand place = new MakeGroup(group, paintSurface, invoker);
+                    this.invoker.Execute(place);
+                }
+                else if (backupprep.Name == "Ellipse")
+                {
+                    Ellipse tmp = backupprep as Ellipse;
+                    backupellipse = tmp;
+                    double top = (double)tmp.GetValue(Canvas.TopProperty);
+                    double left = (double)tmp.GetValue(Canvas.LeftProperty);
+                    double width = tmp.Width;
+                    double height = tmp.Height;
 
-        public double ReturnSmallest(double first, double last)
-        {
-            if(first < last)
-            {
-                return first;
+                    selecting = true;
+                    //selectedShapesList.Add(shape);
+                    selectedElement = tmp;
+                    selectElementsList.Add(selectedElement);
+                    Group group = new Group(left, top, width, height, "ellipse", 0, 0, paintSurface, invoker, selectedElement);
+                    ICommand place = new MakeGroup(group, paintSurface, invoker);
+                    this.invoker.Execute(place);
+                }
+
             }
             else
             {
-                return last;
+                //move
+                if (type == "Move")
+                {
+                    movingGroup(sender, e);
+                    selectElementsList.Clear();
+                }
+                //resize
+                else if (type == "Resize")
+                {
+                    resizingGroup(sender, e);
+                    selectElementsList.Clear();
+                }
+
             }
         }
 
+        //make rectangle shape
+        private void MakeRectangle(object sender, PointerRoutedEventArgs e)
+        {
+            Shape shape = new Shape(e.GetCurrentPoint(paintSurface).Position.X, e.GetCurrentPoint(paintSurface).Position.Y, 50, 50);
+            ICommand place = new MakeRectangles(shape, this.invoker, paintSurface);
+            this.invoker.Execute(place);
+        }
 
-        //elipse
+        //make ellipse shape
+        private void MakeEllipse(object sender, PointerRoutedEventArgs e)
+        {
+            Shape shape = new Shape(e.GetCurrentPoint(paintSurface).Position.X, e.GetCurrentPoint(paintSurface).Position.Y, 50, 50);
+            ICommand place = new MakeEllipses(shape, this.invoker, paintSurface);
+            this.invoker.Execute(place);
+        }
+
+        //moving shape
+        private void movingShape(object sender, PointerRoutedEventArgs e)
+        {
+            Shape shape = selectedShapesList.First();
+            ICommand place = new Moving(shape, e, paintSurface, invoker, selectedElement);
+            this.invoker.Execute(place);
+            type = "deselecting";
+            selecting = false;
+            selectedShapesList.RemoveAt(0);
+            selectedElement = null;
+        }
+
+        //resizing shape
+        private void resizingShape(object sender, PointerRoutedEventArgs e)
+        {
+            Shape shape = selectedShapesList.First();
+            ICommand place = new Resize(shape, e, paintSurface, invoker, selectedElement);
+            this.invoker.Execute(place);
+            type = "deselecting";
+            selecting = false;
+            selectedShapesList.RemoveAt(0);
+            selectedElement = null;
+        }
+
+        //moving group
+        private void movingGroup(object sender, PointerRoutedEventArgs e)
+        {
+            Shape shape = selectedShapesList.First();
+            ICommand place = new Moving(shape, e, paintSurface, invoker, selectedElement);
+            this.invoker.Execute(place);
+            type = "deselecting";
+            selecting = false;
+            selectedShapesList.RemoveAt(0);
+            selectedElement = null;
+        }
+
+        //resizing group
+        private void resizingGroup(object sender, PointerRoutedEventArgs e)
+        {
+            Shape shape = selectedShapesList.First();
+            ICommand place = new Resize(shape, e, paintSurface, invoker, selectedElement);
+            this.invoker.Execute(place);
+            type = "deselecting";
+            selecting = false;
+            selectedShapesList.RemoveAt(0);
+            selectedElement = null;
+        }
+
+        //move click
+        private void Move_Click(object sender, RoutedEventArgs e)
+        {
+            FrameworkElement button = e.OriginalSource as FrameworkElement;
+            type = button.Name;
+            grouping = false;
+            selecting = true;
+        }
+
+        //resize click
+        private void Resize_Click(object sender, RoutedEventArgs e)
+        {
+            FrameworkElement button = e.OriginalSource as FrameworkElement;
+            type = button.Name;
+            grouping = false;
+            selecting = true;
+        }
+
+        //elipse click
         private void Elipse_Click(object sender, RoutedEventArgs e)
         {
             FrameworkElement button = e.OriginalSource as FrameworkElement;
             type = button.Name;
+            grouping = false;
+            selecting = false;
         }
 
-        //rectangle
+        //rectangle click
         private void Rectangle_Click(object sender, RoutedEventArgs e)
         {
             FrameworkElement button = e.OriginalSource as FrameworkElement;
             type = button.Name;
+            grouping = false;
+            selecting = false;
         }
 
-        //ornament
+        //ornament click
         private void Ornament_Click(object sender, RoutedEventArgs e)
         {
             FrameworkElement button = e.OriginalSource as FrameworkElement;
             type = button.Name;
+            grouping = false;
         }
 
-        //group
+        //group click
         private void Group_Click(object sender, RoutedEventArgs e)
         {
+            FrameworkElement button = e.OriginalSource as FrameworkElement;
+            type = button.Name;
 
+            Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
+            ICommand place = new MakeGroup(group, paintSurface, invoker);
+            this.invoker.Execute(place);
+
+            Canvas grid = new Canvas();
+            //grid.Background = Opacity(1);
+            SolidColorBrush groupbrush = new SolidColorBrush(); //brush
+            groupbrush.Color = Windows.UI.Colors.Yellow; //standard brush color is blue
+            groupbrush.Opacity = 0.5; //half opacity
+            grid.Background = groupbrush;
+            grid.Height = paintSurface.Height;
+            grid.Width = paintSurface.Width;
+            Canvas.SetTop(grid, 0);
+            Canvas.SetLeft(grid, 0);
+
+
+            foreach (FrameworkElement elm in selectElementsList)
+            {
+                double top = (double)elm.GetValue(Canvas.TopProperty);
+                double left = (double)elm.GetValue(Canvas.LeftProperty);
+                double width = elm.Width;
+                double height = elm.Height;
+                Group selectedgroup = new Group(left, top, width, height, elm.Name, 0, 0, paintSurface, invoker, elm);
+                //ICommand addgroup = new MakeGroup(selectedgroup, paintSurface, invoker);
+                //this.invoker.Execute(addgroup);
+                group.add(selectedgroup);
+                //grid.Children.Add(elm);
+
+                if (elm.Name == "Ellipse")
+                {
+                    Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
+                    newEllipse.Width = width;
+                    newEllipse.Height = height;
+                    SolidColorBrush elmbrush = new SolidColorBrush();//brush
+                    elmbrush.Color = Windows.UI.Colors.Yellow;//standard brush color is blue
+                    newEllipse.Fill = elmbrush;//fill color
+                    newEllipse.Name = "Ellipse";//attach name
+                    Canvas.SetLeft(newEllipse, left);//set left position
+                    Canvas.SetTop(newEllipse, top);//set top position
+                    grid.Children.Add(newEllipse);
+                }
+                else if (elm.Name == "Rectangle")
+                {
+                    Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
+                    newRectangle.Width = width; //set width
+                    newRectangle.Height = height; //set height     
+                    SolidColorBrush elmbrush = new SolidColorBrush(); //brush
+                    elmbrush.Color = Windows.UI.Colors.Yellow; //standard brush color is blue
+                    newRectangle.Fill = elmbrush; //fill color
+                    newRectangle.Name = "Rectangle"; //attach name
+                    Canvas.SetLeft(newRectangle, left); //set left position
+                    Canvas.SetTop(newRectangle, top); //set top position 
+                    grid.Children.Add(newRectangle);
+                }
+
+
+            }
+            this.paintSurface.Children.Add(grid);
+            grouping = true;
         }
 
-        //undo
+        //undo click
         private void Undo_Click(object sender, RoutedEventArgs e)
         {
-
+            FrameworkElement button = e.OriginalSource as FrameworkElement;
+            type = button.Name;
+            invoker.Undo();
+            grouping = false;
         }
 
-        //redo
+        //redo click
         private void Redo_Click(object sender, RoutedEventArgs e)
         {
-
+            FrameworkElement button = e.OriginalSource as FrameworkElement;
+            type = button.Name;
+            invoker.Redo();
+            grouping = false;
         }
 
-        //save
+        //save click
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-
+            FrameworkElement button = e.OriginalSource as FrameworkElement;
+            type = button.Name;
+            Shape command = new Shape(0, 0, 0, 0);
+            ICommand place = new Saved(command, paintSurface);
+            invoker.Execute(place);
+            grouping = false;
         }
 
-        //load
+        //load click
         private void Load_Click(object sender, RoutedEventArgs e)
         {
-
+            FrameworkElement button = e.OriginalSource as FrameworkElement;
+            type = button.Name;
+            Shape command = new Shape(0, 0, 0, 0);
+            ICommand place = new Loaded(command, paintSurface);
+            invoker.Execute(place);
+            grouping = false;
         }
-
-        //resize
-
-        //move
 
         private void Front_canvas_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
-            //front_canvas.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0,0,0,0));
+
         }
 
         private void Width_TextChanged(object sender, TextChangedEventArgs e)
         {
 
         }
-        
+
         private void Height_TextChanged(object sender, TextChangedEventArgs e)
         {
 
         }
+
     }
 }

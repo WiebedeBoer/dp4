@@ -51,7 +51,8 @@ namespace tekenprogramma
                     location.height = movedElement.Height;
                     invoker.executer++;//acceskey add
                     i++;
-                    FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, selectedelement, location);
+                    FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, movedElement, location);
+                    selectedgroup.movedElements.Add(madeElement);
                 }
             }
         }
@@ -78,14 +79,13 @@ namespace tekenprogramma
                 {
                     FrameworkElement movedElement = drawnElements[i];
                     Location location = new Location();
-
                     location.x = Convert.ToDouble(movedElement.ActualOffset.X);
                     location.y = Convert.ToDouble(movedElement.ActualOffset.Y);
                     location.width = Convert.ToDouble(movedElement.Width) - widthOffset;
                     location.height = Convert.ToDouble(movedElement.Height) - heightOffset;
                     invoker.executer++; //acceskey add
                     i++;
-                    FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, selectedelement, location);
+                    FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, movedElement, location);
                     selectedgroup.movedElements.Add(madeElement);
                 }
             }
@@ -178,6 +178,7 @@ namespace tekenprogramma
     {
         public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, PointerRoutedEventArgs e, FrameworkElement element, Canvas paintSurface, Location location)
         {
+            KeyNumber(element, invoker); //move selected at removed
             FrameworkElement returnelement = null;
             Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
             newRectangle.AccessKey = invoker.executer.ToString();
@@ -196,6 +197,7 @@ namespace tekenprogramma
 
         public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, PointerRoutedEventArgs e, FrameworkElement element, Canvas paintSurface, Location location)
         {
+            KeyNumber(element, invoker); //move selected at removed
             FrameworkElement returnelement = null;
             Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
             newEllipse.AccessKey = invoker.executer.ToString();
@@ -211,12 +213,32 @@ namespace tekenprogramma
             returnelement = newEllipse;
             return returnelement;
         }
+
+        //remove selected element by access key
+        public void KeyNumber(FrameworkElement element, Invoker invoker)
+        {
+            string key = element.AccessKey;
+            int inc = 0;
+            int number = 0;
+            foreach (FrameworkElement drawn in invoker.drawnElements)
+            {
+                if (drawn.AccessKey == key)
+                {
+                    number = inc;
+                }
+                inc++;
+            }
+            invoker.drawnElements.RemoveAt(number);
+            invoker.removedElements.Add(element);
+            invoker.movedElements.Add(element);
+        }
     }
 
     class ConcreteVisitorResize : IVisitor
     {
         public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, PointerRoutedEventArgs e, FrameworkElement element, Canvas paintSurface, Location location)
         {
+            KeyNumber(element, invoker); //move selected at removed
             FrameworkElement returnelement = null;
             Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
             newRectangle.AccessKey = invoker.executer.ToString();
@@ -235,6 +257,7 @@ namespace tekenprogramma
 
         public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, PointerRoutedEventArgs e, FrameworkElement element, Canvas paintSurface, Location location)
         {
+            KeyNumber(element, invoker); //move selected at removed
             FrameworkElement returnelement = null;
             Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
             newEllipse.AccessKey = invoker.executer.ToString();
@@ -249,6 +272,25 @@ namespace tekenprogramma
             invoker.drawnElements.Add(newEllipse);
             returnelement = newEllipse;
             return returnelement;
+        }
+
+        //remove selected element by access key
+        public void KeyNumber(FrameworkElement element, Invoker invoker)
+        {
+            string key = element.AccessKey;
+            int inc = 0;
+            int number = 0;
+            foreach (FrameworkElement drawn in invoker.drawnElements)
+            {
+                if (drawn.AccessKey == key)
+                {
+                    number = inc;
+                }
+                inc++;
+            }
+            invoker.drawnElements.RemoveAt(number);
+            invoker.removedElements.Add(element);
+            invoker.movedElements.Add(element);
         }
     }
 
@@ -289,6 +331,16 @@ namespace tekenprogramma
     //    //public abstract void Prepare(int x, int y, int width, int height);
     //    //public abstract void Place();
     //}
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -239,6 +239,7 @@ namespace tekenprogramma
             double leftOffset = Convert.ToDouble(selectedelement.ActualOffset.X) - e.GetCurrentPoint(paintSurface).Position.X;
             double topOffset = Convert.ToDouble(selectedelement.ActualOffset.Y) - e.GetCurrentPoint(paintSurface).Position.Y;
 
+            
             /*
             //FrameworkElement selectedelement = invoker.selectElementsList.Last();
             Group selectedgroup = invoker.selectedGroups.Last();

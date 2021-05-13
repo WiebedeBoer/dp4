@@ -20,7 +20,6 @@ namespace tekenprogramma
         public List<FrameworkElement> drawnElements = new List<FrameworkElement>();
         public List<FrameworkElement> removedElements = new List<FrameworkElement>();
         public List<FrameworkElement> movedElements = new List<FrameworkElement>();
-
         public List<FrameworkElement> selectElementsList = new List<FrameworkElement>();
         public List<FrameworkElement> unselectElementsList = new List<FrameworkElement>();
 
@@ -30,9 +29,14 @@ namespace tekenprogramma
         public List<Group> drawnGroups = new List<Group>();
         public List<Group> removedGroups = new List<Group>();
         public List<Group> movedGroups = new List<Group>();
-
         public List<Group> selectedGroups = new List<Group>();
         public List<Group> unselectedGroups = new List<Group>();
+
+        public List<IComponent> drawnComponents = new List<IComponent>();
+        public List<IComponent> removedComponents = new List<IComponent>();
+        public List<IComponent> movedComponents = new List<IComponent>();
+        public List<IComponent> selectComponentsList = new List<IComponent>();
+        public List<IComponent> unselectComponentsList = new List<IComponent>();
 
         public int counter = 0;
         public int executer = 0;

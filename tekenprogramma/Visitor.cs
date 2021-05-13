@@ -26,31 +26,72 @@ namespace tekenprogramma
         //public abstract void place();
     }
 
-    public class Client
+    public class MoveClient
     {
         //The client code can run visitor operations over any set of elements without figuring out their concrete classes. 
         //The accept operation directs a call to the appropriate operation in the visitor object.
-        public static void ClientCode(List<IComponent> components, List<FrameworkElement> drawnElements, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
+        //public static void Client(List<IComponent> components, List<FrameworkElement> drawnElements, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
+        public void Client(List<IComponent> components, List<FrameworkElement> drawnElements, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
         {
             Group selectedgroup = invoker.selectedGroups.Last();
             invoker.removedGroups.Add(selectedgroup);
             //calculate difference in location
             double leftOffset = Convert.ToDouble(selectedelement.ActualOffset.X) - e.GetCurrentPoint(paintSurface).Position.X;
             double topOffset = Convert.ToDouble(selectedelement.ActualOffset.Y) - e.GetCurrentPoint(paintSurface).Position.Y;
-            int i = 0;
-            foreach (var component in components)
+            if (selectedgroup.drawnElements.Count() > 0)
             {
-                FrameworkElement movedElement = drawnElements[i];
-                Location location = new Location();
-                location.x = Convert.ToDouble(movedElement.ActualOffset.X) - leftOffset;
-                location.y = Convert.ToDouble(movedElement.ActualOffset.Y) - topOffset;
-                location.width = movedElement.Width;
-                location.height = movedElement.Height;
-                invoker.executer++;//acceskey add
-                i++;
-                FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, selectedelement, location);
+                int i = 0;
+                foreach (var component in components)
+                {
+                    FrameworkElement movedElement = drawnElements[i];
+                    Location location = new Location();
+                    location.x = Convert.ToDouble(movedElement.ActualOffset.X) - leftOffset;
+                    location.y = Convert.ToDouble(movedElement.ActualOffset.Y) - topOffset;
+                    location.width = movedElement.Width;
+                    location.height = movedElement.Height;
+                    invoker.executer++;//acceskey add
+                    i++;
+                    FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, selectedelement, location);
+                }
             }
         }
+    }
+
+
+    public class ResizeClient
+    {
+        //public static void Client(List<IComponent> components, List<FrameworkElement> drawnElements, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
+        public void Client(List<IComponent> components, List<FrameworkElement> drawnElements, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
+        {
+            Group selectedgroup = invoker.selectedGroups.Last();
+            invoker.removedGroups.Add(selectedgroup);
+            //calculate difference in size
+            double newWidth = selectedgroup.ReturnSmallest(e.GetCurrentPoint(paintSurface).Position.X, Convert.ToDouble(selectedelement.ActualOffset.X));
+            double newHeight = selectedgroup.ReturnSmallest(e.GetCurrentPoint(paintSurface).Position.Y, Convert.ToDouble(selectedelement.ActualOffset.Y));
+            double widthOffset = selectedelement.Width - newWidth;
+            double heightOffset = selectedelement.Height - newHeight;
+
+            if (selectedgroup.drawnElements.Count() > 0)
+            {
+                int i = 0;
+                foreach (var component in components)
+                {
+                    FrameworkElement movedElement = drawnElements[i];
+                    Location location = new Location();
+
+                    location.x = Convert.ToDouble(movedElement.ActualOffset.X);
+                    location.y = Convert.ToDouble(movedElement.ActualOffset.Y);
+                    location.width = Convert.ToDouble(movedElement.Width) - widthOffset;
+                    location.height = Convert.ToDouble(movedElement.Height) - heightOffset;
+                    invoker.executer++; //acceskey add
+                    i++;
+                    FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, selectedelement, location);
+                    selectedgroup.movedElements.Add(madeElement);
+                }
+            }
+
+        }
+
     }
 
     public interface IComponent
@@ -60,6 +101,12 @@ namespace tekenprogramma
 
     public class ConcreteComponentRectangle : IComponent
     {
+        public double x;
+        public double y;
+        public double width;
+        public double height;
+
+
         //Note that calling ConcreteComponent which matches the current class name. 
         //This way we let the visitor know the class of the component it works with.
         public FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location)
@@ -71,15 +118,30 @@ namespace tekenprogramma
         /*
         // Concrete Components may have special methods that don't exist in their base class or interface. 
         //The Visitor is still able to use these methods since it's aware of the component's concrete class.
-        public string ExclusiveMethodOfConcreteComponentRectangle()
+        public void ExclusiveMethodOfConcreteComponentRectangle()
         {
             return "Rectangle";
+            Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
+            newRectangle.AccessKey = invoker.executer.ToString();
+            newRectangle.Width = width; //set width
+            newRectangle.Height = height; //set height     
+            SolidColorBrush brush = new SolidColorBrush(); //brush
+            brush.Color = Windows.UI.Colors.Blue; //standard brush color is blue
+            newRectangle.Fill = brush; //fill color
+            newRectangle.Name = "Rectangle"; //attach name
+            Canvas.SetLeft(newRectangle, x); //set left position
+            Canvas.SetTop(newRectangle, y); //set top position 
         }
         */
     }
 
     public class ConcreteComponentEllipse : IComponent
     {
+        public double x;
+        public double y;
+        public double width;
+        public double height;
+
         // Same here: ConcreteComponent => ConcreteComponent
         public FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location)
         {
@@ -88,9 +150,19 @@ namespace tekenprogramma
         }
 
         /*
-        public string SpecialMethodOfConcreteComponentEllipse()
+        public void ExclusiveMethodOfConcreteComponentEllipse()
         {
             return "Ellipse";
+            Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
+            newEllipse.AccessKey = invoker.executer.ToString();
+            newEllipse.Width = width;
+            newEllipse.Height = height;
+            SolidColorBrush brush = new SolidColorBrush();//brush
+            brush.Color = Windows.UI.Colors.Blue;//standard brush color is blue
+            newEllipse.Fill = brush;//fill color
+            newEllipse.Name = "Ellipse";//attach name
+            Canvas.SetLeft(newEllipse, x);//set left position
+            Canvas.SetTop(newEllipse, y);//set top position   
         }
         */
     }

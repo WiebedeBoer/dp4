@@ -27,8 +27,8 @@ namespace tekenprogramma
         public FrameworkElement selectedElement;
         public List<FrameworkElement> selectElementsList = new List<FrameworkElement>();
 
-        public IVisitor moveVisitor = new VisitMove();
-        public IVisitor resizeVisitor = new VisitResize();
+        public IVisitor moveVisitor = new ConcreteVisitorMove();
+        public IVisitor resizeVisitor = new ConcreteVisitorResize();
 
         public IShapeVisitor moveShapeVisitor = new ShapeResizeVisitor();
         public IShapeVisitor resizeShapeVisitor = new ShapeMoveVisitor();

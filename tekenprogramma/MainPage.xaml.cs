@@ -27,13 +27,13 @@ namespace tekenprogramma
         public FrameworkElement selectedElement;
         public List<FrameworkElement> selectElementsList = new List<FrameworkElement>();
 
-        public IVisitor moveVisitor = new ConcreteVisitorMove();
-        public IVisitor resizeVisitor = new ConcreteVisitorResize();
+        //public IVisitor moveVisitor = new ConcreteVisitorMove();
+        //public IVisitor resizeVisitor = new ConcreteVisitorResize();
 
-        public IShapeVisitor moveShapeVisitor = new ShapeResizeVisitor();
-        public IShapeVisitor resizeShapeVisitor = new ShapeMoveVisitor();
+        //public IShapeVisitor moveShapeVisitor = new ShapeResizeVisitor();
+        //public IShapeVisitor resizeShapeVisitor = new ShapeMoveVisitor();
 
-        public Strategy strategy;
+        //public Strategy strategy;
 
         public MainPage()
         {
@@ -166,7 +166,7 @@ namespace tekenprogramma
             location.width = selectedElement.Width;
             location.height = selectedElement.Height;
             Shape shape = new Shape(location.x, location.y, location.width, location.height);
-            ICommand place = new Moving(shape, invoker, location, paintSurface, selectedElement);
+            ICommand place = new Moving(shape, invoker, location, paintSurface, selectedElement, e);
             this.invoker.Execute(place);
 
             //this.strategy.shape.accept(move);
@@ -178,14 +178,42 @@ namespace tekenprogramma
         //resizing shape
         private void ResizingShape(object sender, PointerRoutedEventArgs e)
         {
+            //Location location = new Location();
+            //location.x = Convert.ToDouble(selectedElement.ActualOffset.X);
+            //location.y = Convert.ToDouble(selectedElement.ActualOffset.Y);
+            //location.width = Convert.ToDouble(selectedElement.Width);
+            //location.height = Convert.ToDouble(selectedElement.Height);
+
+            //calculate size
+            double ex = e.GetCurrentPoint(paintSurface).Position.X;
+            double ey = e.GetCurrentPoint(paintSurface).Position.Y;
+            double lw = Convert.ToDouble(selectedElement.ActualOffset.X); //set width
+            double lh = Convert.ToDouble(selectedElement.ActualOffset.Y); //set height
+            double w = ReturnSmallest(ex, lw);
+            double h = ReturnSmallest(ey, lh);
+
             Location location = new Location();
             location.x = Convert.ToDouble(selectedElement.ActualOffset.X);
             location.y = Convert.ToDouble(selectedElement.ActualOffset.Y);
-            location.width = Convert.ToDouble(selectedElement.Width);
-            location.height = Convert.ToDouble(selectedElement.Height);
+            location.width = w;
+            location.height = h;
+
             Shape shape = new Shape(location.x, location.y, location.width, location.height);
             ICommand place = new Resize(shape, invoker, e, location, paintSurface, selectedElement);
             this.invoker.Execute(place);
+        }
+
+        //give smallest
+        public double ReturnSmallest(double first, double last)
+        {
+            if (first < last)
+            {
+                return last - first;
+            }
+            else
+            {
+                return first - last;
+            }
         }
 
         //
@@ -301,12 +329,15 @@ namespace tekenprogramma
         //save click
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            FrameworkElement button = e.OriginalSource as FrameworkElement;
-            type = button.Name;
-            Shape command = new Shape(0, 0, 0, 0);
-            ICommand place = new Saved(command, paintSurface, invoker);
-            invoker.Execute(place);
-            grouping = false;
+            //FrameworkElement button = e.OriginalSource as FrameworkElement;
+            //type = button.Name;
+            //Shape command = new Shape(0, 0, 0, 0);
+            //ICommand place = new Saved(command, paintSurface, invoker);
+            //invoker.Execute(place);
+            //grouping = false;
+            WriteClient writer = new WriteClient();
+            IWriter visitor = new ConcreteVisitorWrite();
+            writer.Client(this.paintSurface, this.invoker, visitor);
         }
 
         //load click

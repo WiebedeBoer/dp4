@@ -32,6 +32,9 @@ namespace tekenprogramma
         public FrameworkElement nextelement; //next element
         public FrameworkElement selectedElement; //selected element
 
+        public IComponent prevcomponent;
+        public IComponent nextcomponent;
+
         //file IO
         public string fileText { get; set; }
 
@@ -112,6 +115,9 @@ namespace tekenprogramma
             Canvas.SetTop(newRectangle, y); //set top position 
             invoker.drawnElements.Add(newRectangle);
             Repaint(invoker, paintSurface); //repaint
+
+            IComponent rectangle = new ConcreteComponentRectangle(x, y, width, height);
+            invoker.drawnComponents.Add(rectangle);
         }
 
         //create ellipse
@@ -129,6 +135,9 @@ namespace tekenprogramma
             Canvas.SetTop(newEllipse, y);//set top position   
             invoker.drawnElements.Add(newEllipse);
             Repaint(invoker, paintSurface); //repaint
+
+            IComponent ellipse = new ConcreteComponentEllipse(x, y, width, height);
+            invoker.drawnComponents.Add(ellipse);
         }
 
         //
@@ -143,6 +152,10 @@ namespace tekenprogramma
             invoker.removedElements.Add(prevelement);
             invoker.drawnElements.RemoveAt(invoker.drawnElements.Count() - 1);
             Repaint(invoker, paintSurface); //repaint
+
+            prevcomponent = invoker.drawnComponents.Last();
+            invoker.removedComponents.Add(prevcomponent);
+            invoker.drawnComponents.RemoveAt(invoker.drawnComponents.Count() -1);
         }
 
         //redo create
@@ -153,6 +166,10 @@ namespace tekenprogramma
             invoker.drawnElements.Add(nextelement);
             invoker.removedElements.RemoveAt(invoker.removedElements.Count() - 1);
             Repaint(invoker, paintSurface); //repaint
+
+            nextcomponent = invoker.removedComponents.Last();
+            invoker.drawnComponents.Add(nextcomponent);
+            invoker.removedComponents.RemoveAt(invoker.removedComponents.Count() -1);           
         }
 
         //
@@ -355,6 +372,7 @@ namespace tekenprogramma
         //
         //saving
         //
+        /*
         public async void Saving(Canvas paintSurface, Invoker invoker)
         {
 
@@ -413,6 +431,7 @@ namespace tekenprogramma
             }
 
         }
+        */
 
         //
         //loading

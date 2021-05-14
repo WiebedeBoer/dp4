@@ -52,7 +52,7 @@ namespace tekenprogramma
 
         //}
 
-        public abstract string Display(int depth, Group group);
+        //public abstract string Display(int depth, Group group);
 
         //public abstract void Select(PointerRoutedEventArgs e, Canvas paintSurface);
         //public abstract void Deselect(PointerRoutedEventArgs e);

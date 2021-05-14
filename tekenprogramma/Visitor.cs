@@ -17,23 +17,13 @@ using Windows.ApplicationModel.Activation;
 namespace tekenprogramma
 {
 
-    public abstract class Strategy
-    {
-        protected ICommand cmd;
-        protected Invoker invoker;
-        protected Canvas paintSurface;
-        public Shape shape;
-        //public abstract void place();
-    }
-
+    //moving visitor client for group
     public class MoveClient
     {
         //The client code can run visitor operations over any set of elements without figuring out their concrete classes. 
         //The accept operation directs a call to the appropriate operation in the visitor object.
-        //public static void Client(List<IComponent> components, List<FrameworkElement> drawnElements, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
-        public void Client(List<IComponent> components, List<FrameworkElement> drawnElements, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
+        public void Client(List<IComponent> components, List<FrameworkElement> drawnElements, Group selectedgroup, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
         {
-            Group selectedgroup = invoker.selectedGroups.Last();
             invoker.removedGroups.Add(selectedgroup);
             //calculate difference in location
             double leftOffset = Convert.ToDouble(selectedelement.ActualOffset.X) - e.GetCurrentPoint(paintSurface).Position.X;
@@ -55,16 +45,31 @@ namespace tekenprogramma
                     selectedgroup.movedElements.Add(madeElement);
                 }
             }
+
+            if (selectedgroup.addedGroups.Count() > 0)
+            {
+                foreach (Group subgroup in selectedgroup.addedGroups)
+                {
+                    MoveClient submover = new MoveClient();
+                    IVisitor subvisitor = new ConcreteVisitorMove();
+                    submover.Client(subgroup.drawnComponents, subgroup.drawnElements, subgroup, subvisitor, invoker, e, paintSurface, selectedelement);
+                }
+            }
+            //add to moved or resized
+            invoker.movedGroups.Add(selectedgroup);
+            //remove selected group
+            invoker.unselectedGroups.Add(selectedgroup);
+            invoker.selectedGroups.RemoveAt(invoker.selectedGroups.Count() - 1);
+
+            selectedgroup.Repaint(invoker, paintSurface); //repaint
         }
     }
 
-
+    //resizing client for group
     public class ResizeClient
     {
-        //public static void Client(List<IComponent> components, List<FrameworkElement> drawnElements, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
-        public void Client(List<IComponent> components, List<FrameworkElement> drawnElements, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
+        public void Client(List<IComponent> components, List<FrameworkElement> drawnElements, Group selectedgroup, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
         {
-            Group selectedgroup = invoker.selectedGroups.Last();
             invoker.removedGroups.Add(selectedgroup);
             //calculate difference in size
             double newWidth = selectedgroup.ReturnSmallest(e.GetCurrentPoint(paintSurface).Position.X, Convert.ToDouble(selectedelement.ActualOffset.X));
@@ -90,15 +95,36 @@ namespace tekenprogramma
                 }
             }
 
-        }
+            if (selectedgroup.addedGroups.Count() > 0)
+            {
+                foreach (Group subgroup in selectedgroup.addedGroups)
+                {
+                    ResizeClient subresizer = new ResizeClient();
+                    IVisitor subvisitor = new ConcreteVisitorResize();
+                    subresizer.Client(subgroup.drawnComponents, subgroup.drawnElements, subgroup, subvisitor, invoker, e, paintSurface, selectedelement);
+                }
+            }
+            //add to moved or resized
+            invoker.movedGroups.Add(selectedgroup);
+            //remove selected group
+            invoker.unselectedGroups.Add(selectedgroup);
+            invoker.selectedGroups.RemoveAt(invoker.selectedGroups.Count() - 1);
 
+            selectedgroup.Repaint(invoker, paintSurface);//repaint
+        }
     }
+
+    //
+    //components
+    //
 
     public interface IComponent
     {
         FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location);
+        string Write(IWriter visitor, FrameworkElement element, Canvas paintSurface);
     }
 
+    //rectangle component
     public class ConcreteComponentRectangle : IComponent
     {
         public double x;
@@ -106,13 +132,26 @@ namespace tekenprogramma
         public double width;
         public double height;
 
+        public ConcreteComponentRectangle(double x, double y, double width, double height)
+        {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
 
         //Note that calling ConcreteComponent which matches the current class name. 
         //This way we let the visitor know the class of the component it works with.
         public FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location)
         {
-            FrameworkElement madeElement = visitor.VisitConcreteComponentRectangle(this, invoker, e, selectedelement, paintSurface, location);
+            FrameworkElement madeElement = visitor.VisitConcreteComponentRectangle(this, invoker, selectedelement, paintSurface, location, e);
             return madeElement;
+        }
+
+        public string Write(IWriter visitor, FrameworkElement element, Canvas paintSurface)
+        {
+            string str = visitor.WriteRectangle(this, element, paintSurface);
+            return str;
         }
 
         /*
@@ -135,6 +174,7 @@ namespace tekenprogramma
         */
     }
 
+    //ellipse component
     public class ConcreteComponentEllipse : IComponent
     {
         public double x;
@@ -142,11 +182,25 @@ namespace tekenprogramma
         public double width;
         public double height;
 
+        public ConcreteComponentEllipse(double x, double y, double width, double height)
+        {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+
         // Same here: ConcreteComponent => ConcreteComponent
         public FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location)
         {
-            FrameworkElement madeElement = visitor.VisitConcreteComponentEllipse(this, invoker, e, selectedelement, paintSurface, location);
+            FrameworkElement madeElement = visitor.VisitConcreteComponentEllipse(this, invoker, selectedelement, paintSurface, location, e);
             return madeElement;
+        }
+
+        public string Write(IWriter visitor, FrameworkElement element, Canvas paintSurface)
+        {
+            string str = visitor.WriteEllipse(this, element, paintSurface);
+            return str;
         }
 
         /*
@@ -167,16 +221,18 @@ namespace tekenprogramma
         */
     }
 
+    //visitor cinterface
     public interface IVisitor
     {
-        FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, PointerRoutedEventArgs e, FrameworkElement element, Canvas paintSurface, Location location);
+        FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e);
 
-        FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, PointerRoutedEventArgs e, FrameworkElement element, Canvas paintSurface, Location location);
+        FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e);
     }
 
+    //move visitor
     class ConcreteVisitorMove : IVisitor
     {
-        public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, PointerRoutedEventArgs e, FrameworkElement element, Canvas paintSurface, Location location)
+        public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e)
         {
             KeyNumber(element, invoker); //move selected at removed
             FrameworkElement returnelement = null;
@@ -195,7 +251,7 @@ namespace tekenprogramma
             return returnelement;
         }
 
-        public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, PointerRoutedEventArgs e, FrameworkElement element, Canvas paintSurface, Location location)
+        public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e)
         {
             KeyNumber(element, invoker); //move selected at removed
             FrameworkElement returnelement = null;
@@ -232,12 +288,29 @@ namespace tekenprogramma
             invoker.removedElements.Add(element);
             invoker.movedElements.Add(element);
         }
+
     }
 
+    //resize visitor
     class ConcreteVisitorResize : IVisitor
     {
-        public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, PointerRoutedEventArgs e, FrameworkElement element, Canvas paintSurface, Location location)
+        public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e)
         {
+
+            //calculate size
+            //double ex = e.GetCurrentPoint(paintSurface).Position.X;
+            //double ey = e.GetCurrentPoint(paintSurface).Position.Y;
+            //double lw = Convert.ToDouble(element.ActualOffset.X); //set width
+            //double lh = Convert.ToDouble(element.ActualOffset.Y); //set height
+            //double w = ReturnSmallest(ex, lw);
+            //double h = ReturnSmallest(ey, lh);
+
+            //Location nlocation = new Location();
+            //nlocation.x = Convert.ToDouble(element.ActualOffset.X);
+            //nlocation.y = Convert.ToDouble(element.ActualOffset.Y);
+            //nlocation.width = w;
+            //nlocation.height = h;
+
             KeyNumber(element, invoker); //move selected at removed
             FrameworkElement returnelement = null;
             Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
@@ -255,8 +328,23 @@ namespace tekenprogramma
             return returnelement;
         }
 
-        public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, PointerRoutedEventArgs e, FrameworkElement element, Canvas paintSurface, Location location)
+        public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e)
         {
+
+            //calculate size
+            //double ex = e.GetCurrentPoint(paintSurface).Position.X;
+            //double ey = e.GetCurrentPoint(paintSurface).Position.Y;
+            //double lw = Convert.ToDouble(element.ActualOffset.X); //set width
+            //double lh = Convert.ToDouble(element.ActualOffset.Y); //set height
+            //double w = ReturnSmallest(ex, lw);
+            //double h = ReturnSmallest(ey, lh);
+
+            //Location nlocation = new Location();
+            //nlocation.x = Convert.ToDouble(element.ActualOffset.X);
+            //nlocation.y = Convert.ToDouble(element.ActualOffset.Y);
+            //nlocation.width = w;
+            //nlocation.height = h;
+
             KeyNumber(element, invoker); //move selected at removed
             FrameworkElement returnelement = null;
             Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
@@ -292,7 +380,220 @@ namespace tekenprogramma
             invoker.removedElements.Add(element);
             invoker.movedElements.Add(element);
         }
+
+        //give smallest
+        public double ReturnSmallest(double first, double last)
+        {
+            if (first < last)
+            {
+                return last - first;
+            }
+            else
+            {
+                return first - last;
+            }
+        }
+
     }
+
+
+
+    public class WriteClient
+    {
+        public async void Client(Canvas paintSurface, Invoker invoker, IWriter visitor)
+        {
+            //string fileText = "";
+            
+            //try
+            //{
+                string lines = "";
+                int i = 0;
+                //ungrouped and drawn
+                foreach (FrameworkElement child in paintSurface.Children)
+                {
+                    int elmcheck = CheckInGroup(invoker, child); //see if already in group
+                    if (elmcheck == 0)
+                    {
+                        IComponent component = invoker.drawnComponents[i];
+                        //IWriter visitor = new ConcreteVisitorWrite();
+                        string str = component.Write(visitor, child, paintSurface);
+                        lines += str;
+
+                    //if (child is Rectangle)
+                    //{
+                    //    double top = (double)child.GetValue(Canvas.TopProperty);
+                    //    double left = (double)child.GetValue(Canvas.LeftProperty);
+                    //    string str = "rectangle " + left + " " + top + " " + child.Width + " " + child.Height + "\n";
+                    //    lines += str;
+                    //}
+                    //else if (child is Ellipse)
+                    //{
+                    //    double top = (double)child.GetValue(Canvas.TopProperty);
+                    //    double left = (double)child.GetValue(Canvas.LeftProperty);
+                    //    string str = "ellipse " + left + " " + top + " " + child.Width + " " + child.Height + "\n";
+                    //    lines += str;
+                    //}
+                    }
+                    i++;
+                }
+                //grouped and drawn
+                foreach (Group group in invoker.drawnGroups)
+                {
+                    string gstr = Display(0, group, visitor, paintSurface);
+                    lines += gstr;
+                }
+                //create and write to file
+                Windows.Storage.StorageFolder storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
+                Windows.Storage.StorageFile sampleFile = await storageFolder.CreateFileAsync("dp4data.txt", Windows.Storage.CreationCollisionOption.ReplaceExisting);
+                await Windows.Storage.FileIO.WriteTextAsync(sampleFile, lines);
+            //}
+            ////file errors
+            //catch (System.IO.FileNotFoundException)
+            //{
+            //    fileText = "File not found.";
+            //}
+            //catch (System.IO.FileLoadException)
+            //{
+            //    fileText = "File Failed to load.";
+            //}
+            //catch (System.IO.IOException e)
+            //{
+            //    fileText = "File IO error " + e;
+            //}
+            //catch (Exception err)
+            //{
+            //    fileText = err.Message;
+            //}
+
+        }
+
+        //check if element is already in group
+        public int CheckInGroup(Invoker invoker, FrameworkElement element)
+        {
+            int counter = 0;
+            foreach (Group group in invoker.drawnGroups)
+            {
+                if (group.drawnElements.Count() > 0)
+                {
+                    foreach (FrameworkElement groupelement in group.drawnElements)
+                    {
+                        if (groupelement.AccessKey == element.AccessKey)
+                        {
+                            counter++;
+                        }
+                    }
+                }
+            }
+            return counter;
+        }
+
+        //display lines for saving
+        public string Display(int depth, Group group, IWriter visitor, Canvas paintSurface)
+        {
+            //Display group.
+            string str = "";
+            //Add group.
+            int i = 0;
+            while (i < depth)
+            {
+                str += "\t";
+            }
+            int groupcount = group.drawnElements.Count() + group.addedGroups.Count();
+            str = str + "group " + groupcount + "\n";
+
+            //Recursively display child nodes.
+            depth = depth + 1; //add depth tab
+            if (group.drawnElements.Count() > 0)
+            {
+                int j = 0;
+                //foreach (FrameworkElement child in group.drawnElements)
+                foreach(IComponent component in group.drawnComponents)
+                {
+                    FrameworkElement child = group.drawnElements[j];
+                    j++;
+
+                    int k = 0;
+                    while (k < depth)
+                    {
+                        str += "\t";
+                        k++;
+                    }
+
+                    str = str + component.Write(visitor, child, paintSurface);
+                    //lines += str;
+                    //if (child is Rectangle)
+                    //{
+                    //    int j = 0;
+                    //    while (j < depth)
+                    //    {
+                    //        str += "\t";
+                    //        j++;
+                    //    }
+                    //    str = str + "rectangle " + child.ActualOffset.X + " " + child.ActualOffset.Y + " " + child.Width + " " + child.Height + "\n";
+                    //}
+                    ////else if (child is Ellipse)
+                    //else
+                    //{
+                    //    int j = 0;
+                    //    while (j < depth)
+                    //    {
+                    //        str += "\t";
+                    //        j++;
+                    //    }
+                    //    str = str + "ellipse " + child.ActualOffset.X + " " + child.ActualOffset.Y + " " + child.Width + " " + child.Height + "\n";
+                    //}
+                }
+            }
+            if (group.addedGroups.Count() > 0)
+            {
+                foreach (Group subgroup in group.addedGroups)
+                {
+                    Display(depth + 1, subgroup, visitor, paintSurface);
+                }
+            }
+            return str;
+        }
+
+
+
+    }    
+
+    //interface for writing to file
+    public interface IWriter
+    {
+        string WriteRectangle(ConcreteComponentRectangle component, FrameworkElement element, Canvas paintSurface);
+        string WriteEllipse(ConcreteComponentEllipse component, FrameworkElement element, Canvas paintSurface);
+    }
+
+
+    public class ConcreteVisitorWrite : IWriter
+    {
+
+        public string WriteRectangle(ConcreteComponentRectangle component, FrameworkElement element, Canvas paintSurface)
+        {
+            double top = (double)element.GetValue(Canvas.TopProperty);
+            double left = (double)element.GetValue(Canvas.LeftProperty);
+            string str = "rectangle " + left + " " + top + " " + element.Width + " " + element.Height + "\n";
+            //lines += str;
+            return str;
+        }
+
+        public string WriteEllipse(ConcreteComponentEllipse component, FrameworkElement element, Canvas paintSurface)
+        {
+            double top = (double)element.GetValue(Canvas.TopProperty);
+            double left = (double)element.GetValue(Canvas.LeftProperty);
+            string str = "ellipse " + left + " " + top + " " + element.Width + " " + element.Height + "\n";
+            //lines += str;
+            return str;
+        }
+
+    }
+
+
+    
+
+
+
 
 
 
@@ -307,12 +608,7 @@ namespace tekenprogramma
     }
     */
 
-    //interface for writing to file
-    public interface IWriter
-    {
-        string WriteRectangle(FrameworkElement element, Canvas paintSurface);
-        string WriteEllipse(FrameworkElement element, Canvas paintSurface);
-    }
+
 
     //interface for the visitor
     //public interface IShapes
@@ -340,7 +636,7 @@ namespace tekenprogramma
 
 
 
-
+    /*
 
 
 
@@ -524,7 +820,7 @@ namespace tekenprogramma
         }
     }
 
-
+    */
 
 
 
@@ -685,57 +981,39 @@ namespace tekenprogramma
     }
     */
 
-    public class VisitWrite : IWriter
+
+
+    /*
+    public async void WriteToFile(Canvas paintSurface)
     {
+        string lines = "";
 
-
-        public string WriteRectangle(FrameworkElement element, Canvas paintSurface)
+        foreach (FrameworkElement child in paintSurface.Children)
         {
-            double top = (double)element.GetValue(Canvas.TopProperty);
-            double left = (double)element.GetValue(Canvas.LeftProperty);
-            string str = "rectangle " + left + " " + top + " " + element.Width + " " + element.Height + "\n";
-            //lines += str;
-            return str;
-        }
-
-        public string WriteEllipse(FrameworkElement element, Canvas paintSurface)
-        {
-            double top = (double)element.GetValue(Canvas.TopProperty);
-            double left = (double)element.GetValue(Canvas.LeftProperty);
-            string str = "ellipse " + left + " " + top + " " + element.Width + " " + element.Height + "\n";
-            //lines += str;
-            return str;
-        }
-
-        /*
-        public async void WriteToFile(Canvas paintSurface)
-        {
-            string lines = "";
-
-            foreach (FrameworkElement child in paintSurface.Children)
+            //rectangle
+            if (child is Rectangle)
             {
-                //rectangle
-                if (child is Rectangle)
-                {
-                    double top = (double)child.GetValue(Canvas.TopProperty);
-                    double left = (double)child.GetValue(Canvas.LeftProperty);
-                    string str = "rectangle " + left + " " + top + " " + child.Width + " " + child.Height + "\n";
-                    lines += str;
-                }
-                //ellipse
-                else
-                {
-                    double top = (double)child.GetValue(Canvas.TopProperty);
-                    double left = (double)child.GetValue(Canvas.LeftProperty);
-                    string str = "ellipse " + left + " " + top + " " + child.Width + " " + child.Height + "\n";
-                    lines += str;
-                }
+                double top = (double)child.GetValue(Canvas.TopProperty);
+                double left = (double)child.GetValue(Canvas.LeftProperty);
+                string str = "rectangle " + left + " " + top + " " + child.Width + " " + child.Height + "\n";
+                lines += str;
             }
-            //create and write to file
-            Windows.Storage.StorageFolder storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
-            Windows.Storage.StorageFile sampleFile = await storageFolder.CreateFileAsync("dp2data.txt", Windows.Storage.CreationCollisionOption.ReplaceExisting);
-            await Windows.Storage.FileIO.WriteTextAsync(sampleFile, lines);
+            //ellipse
+            else
+            {
+                double top = (double)child.GetValue(Canvas.TopProperty);
+                double left = (double)child.GetValue(Canvas.LeftProperty);
+                string str = "ellipse " + left + " " + top + " " + child.Width + " " + child.Height + "\n";
+                lines += str;
+            }
         }
-        */
+        //create and write to file
+        Windows.Storage.StorageFolder storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
+        Windows.Storage.StorageFile sampleFile = await storageFolder.CreateFileAsync("dp2data.txt", Windows.Storage.CreationCollisionOption.ReplaceExisting);
+        await Windows.Storage.FileIO.WriteTextAsync(sampleFile, lines);
     }
+    */
+
+
+
 }

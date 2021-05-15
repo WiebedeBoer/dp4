@@ -455,7 +455,7 @@ namespace tekenprogramma
             invoker.counter = 0;
             //read file
             Windows.Storage.StorageFolder storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
-            Windows.Storage.StorageFile saveFile = await storageFolder.GetFileAsync("dp3data.txt");
+            Windows.Storage.StorageFile saveFile = await storageFolder.GetFileAsync("dp4data.txt");
             string text = await Windows.Storage.FileIO.ReadTextAsync(saveFile);
             //load shapes
             string[] readText = Regex.Split(text, "\\n+");

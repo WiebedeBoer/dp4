@@ -35,6 +35,9 @@ namespace tekenprogramma
         public IComponent prevcomponent;
         public IComponent nextcomponent;
 
+        public List<FrameworkElement> movedElements = new List<FrameworkElement>();
+        public List<FrameworkElement> unmovedElements = new List<FrameworkElement>();
+
         //file IO
         public string fileText { get; set; }
 
@@ -220,6 +223,7 @@ namespace tekenprogramma
                 invoker.drawnElements.Add(newEllipse);
                 returnelement = newEllipse;
             }
+            this.movedElements.Add(returnelement);
             return returnelement;
         }
 
@@ -245,6 +249,15 @@ namespace tekenprogramma
         //move back element
         public void MoveBack(Invoker invoker, Canvas paintSurface)
         {
+            ////remove next
+            //prevelement = invoker.drawnElements.Last();
+            //this.unmovedElements.Add(prevelement);
+            //invoker.drawnElements.RemoveAt(invoker.drawnElements.Count() - 1);
+            ////move back moved element
+            //nextelement = this.movedElements.Last();
+            //this.movedElements.RemoveAt(this.movedElements.Count() - 1);
+            //invoker.drawnElements.Add(nextelement);
+            //Repaint(invoker, paintSurface); //repaint  
             //remove next
             prevelement = invoker.drawnElements.Last();
             invoker.removedElements.Add(prevelement);
@@ -259,6 +272,15 @@ namespace tekenprogramma
         //move back element
         public void MoveAgain(Invoker invoker, Canvas paintSurface)
         {
+            ////remove previous
+            //prevelement = invoker.drawnElements.Last();
+            //nextelement = this.unmovedElements.Last();
+            //this.unmovedElements.Add(prevelement);
+            //this.movedElements.Add(prevelement);
+            //invoker.drawnElements.RemoveAt(invoker.drawnElements.Count() - 1);
+            ////move again moved element
+            //invoker.drawnElements.Add(nextelement);
+            //Repaint(invoker, paintSurface); //repaint   
             //remove previous
             prevelement = invoker.drawnElements.Last();
             nextelement = invoker.removedElements.Last();
@@ -332,6 +354,7 @@ namespace tekenprogramma
                 invoker.drawnElements.Add(newEllipse);
                 returnelement = newEllipse;
             }
+            this.movedElements.Add(returnelement);
             return returnelement;
         }
 

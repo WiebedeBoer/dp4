@@ -484,14 +484,19 @@ namespace tekenprogramma
             //clear invoker
             invoker.drawnElements.Clear();
             invoker.removedElements.Clear();
+            invoker.unmovedElements.Clear();
             invoker.movedElements.Clear();
             invoker.selectElements.Clear();
             invoker.unselectElements.Clear();
+            invoker.undoElements.Clear();
+            invoker.redoComponents.Clear();
             invoker.drawnGroups.Clear();
             invoker.removedGroups.Clear();
             invoker.movedGroups.Clear();
             invoker.selectedGroups.Clear();
             invoker.unselectedGroups.Clear();
+            invoker.undoGroups.Clear();
+            invoker.redoGroups.Clear();
             invoker.executer = 0;
             invoker.counter = 0;
             //read file

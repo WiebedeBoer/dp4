@@ -122,7 +122,7 @@ namespace tekenprogramma
                 ConcreteComponentEllipse component = new ConcreteComponentEllipse(this.location.x, this.location.y, this.location.width, this.location.height);
                 visitor.VisitConcreteComponentEllipse(component, this.invoker, this.element, this.paintSurface, this.location,this.e);
             }
-            this.shape.Repaint(this.invoker, this.paintSurface);
+            this.shape.Repaint(this.invoker, this.paintSurface, false);
         }
 
         public void Undo()
@@ -180,7 +180,7 @@ namespace tekenprogramma
                 ConcreteComponentEllipse component = new ConcreteComponentEllipse(this.location.x, this.location.y, this.location.width, this.location.height);
                 visitor.VisitConcreteComponentEllipse(component, this.invoker, this.element, this.paintSurface, this.location,this.e);
             }
-            this.shape.Repaint(this.invoker,this.paintSurface);
+            this.shape.Repaint(this.invoker,this.paintSurface, false);
         }
 
         public void Undo()

@@ -14,30 +14,51 @@ namespace tekenprogramma
     //class invoker
     public class Invoker
     {
+        //actions
         public List<ICommand> actionsList = new List<ICommand>();
         public List<ICommand> redoList = new List<ICommand>();
 
-        public List<FrameworkElement> drawnElements = new List<FrameworkElement>();
-        public List<FrameworkElement> removedElements = new List<FrameworkElement>();
-        public List<FrameworkElement> movedElements = new List<FrameworkElement>();
-        public List<FrameworkElement> selectElementsList = new List<FrameworkElement>();
-        public List<FrameworkElement> unselectElementsList = new List<FrameworkElement>();
+        //elements
+        //state 0
+        public List<FrameworkElement> removedElements = new List<FrameworkElement>(); //0
+        //state 1
+        public List<FrameworkElement> drawnElements = new List<FrameworkElement>(); //1
+        //state 2
+        public List<FrameworkElement> selectElements = new List<FrameworkElement>(); //2a
+        public List<FrameworkElement> unselectElements = new List<FrameworkElement>(); //2b
+        //state 3
+        public List<FrameworkElement> movedElements = new List<FrameworkElement>(); //3a
+        public List<FrameworkElement> unmovedElements = new List<FrameworkElement>(); //3b
+        //state 4
+        public List<FrameworkElement> undoElements = new List<FrameworkElement>(); //4a
+        public List<FrameworkElement> redoElements = new List<FrameworkElement>(); //4b
 
         //public List<FrameworkElement> groupedElementsList = new List<FrameworkElement>();
         //public List<FrameworkElement> ungroupedElementsList = new List<FrameworkElement>();
 
-        public List<Group> drawnGroups = new List<Group>();
-        public List<Group> removedGroups = new List<Group>();
-        public List<Group> movedGroups = new List<Group>();
-        public List<Group> selectedGroups = new List<Group>();
-        public List<Group> unselectedGroups = new List<Group>();
+        //groups
+        public List<Group> removedGroups = new List<Group>(); //0
+        public List<Group> drawnGroups = new List<Group>(); //1       
 
+        public List<Group> selectedGroups = new List<Group>(); //2a
+        public List<Group> unselectedGroups = new List<Group>(); //2b
+
+        public List<Group> movedGroups = new List<Group>(); //3a
+        public List<Group> unmovedGroups = new List<Group>(); //3b
+
+        public List<Group> undoGroups = new List<Group>(); //4a
+        public List<Group> redoGroups = new List<Group>(); //4b
+
+        //components
         public List<IComponent> drawnComponents = new List<IComponent>();
         public List<IComponent> removedComponents = new List<IComponent>();
         public List<IComponent> movedComponents = new List<IComponent>();
+        public List<IComponent> unmovedComponents = new List<IComponent>();
         public List<IComponent> selectComponentsList = new List<IComponent>();
         public List<IComponent> unselectComponentsList = new List<IComponent>();
-
+        public List<IComponent> undoComponents = new List<IComponent>();
+        public List<IComponent> redoComponents = new List<IComponent>();
+        //counting executed
         public int counter = 0;
         public int executer = 0;
 

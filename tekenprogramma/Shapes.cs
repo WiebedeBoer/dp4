@@ -256,7 +256,7 @@ namespace tekenprogramma
         {
             //shuffle unselected
             prevelement = invoker.movedElements.Last();
-            invoker.unselectElements.RemoveAt(invoker.unselectElements.Count() - 1); //2b-
+            invoker.unselectElements.RemoveAt(invoker.unselectElements.Count() - 1); //2b- //err
             invoker.selectElements.Add(prevelement); //2a+
             //shuffle moved
             nextelement = invoker.unmovedElements.Last();

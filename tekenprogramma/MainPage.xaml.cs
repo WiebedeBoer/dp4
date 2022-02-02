@@ -253,28 +253,40 @@ namespace tekenprogramma
         //move click
         private void Move_Click(object sender, RoutedEventArgs e)
         {
-            FrameworkElement button = e.OriginalSource as FrameworkElement;
-            type = button.Name;
-            grouping = false;
-            selecting = true;
+            if (invoker.selectElements.Count() > 0)
+            {
+                FrameworkElement button = e.OriginalSource as FrameworkElement;
+                type = button.Name;
+                grouping = false;
+                selecting = true;
+            }
+
         }
 
         //resize click
         private void Resize_Click(object sender, RoutedEventArgs e)
         {
-            FrameworkElement button = e.OriginalSource as FrameworkElement;
-            type = button.Name;
-            grouping = false;
-            selecting = true;
+            if (invoker.selectElements.Count() > 0)
+            {
+                FrameworkElement button = e.OriginalSource as FrameworkElement;
+                type = button.Name;
+                grouping = false;
+                selecting = true;
+            }
+
         }
 
         //elipse click
         private void Elipse_Click(object sender, RoutedEventArgs e)
         {
-            FrameworkElement button = e.OriginalSource as FrameworkElement;
-            type = button.Name;
-            grouping = false;
-            selecting = false;
+            if (invoker.selectElements.Count() > 0)
+            {
+                FrameworkElement button = e.OriginalSource as FrameworkElement;
+                type = button.Name;
+                grouping = false;
+                selecting = false;
+            }
+
         }
 
         //rectangle click
@@ -297,15 +309,19 @@ namespace tekenprogramma
         //group click
         private void Group_Click(object sender, RoutedEventArgs e)
         {
-            FrameworkElement button = e.OriginalSource as FrameworkElement;
-            type = button.Name;
-            //Canvas newcanvas = new Canvas();
-            Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
-            //ICommand place = new MakeGroup(group,paintSurface,invoker,newcanvas);
-            //ICommand place = new MakeGroup(group, paintSurface, invoker, selectedElemenent);
-            ICommand place = new MakeGroup(group, paintSurface, invoker);
-            this.invoker.Execute(place);
-            grouping = true;
+            if (invoker.selectElements.Count() >0)
+            {
+                FrameworkElement button = e.OriginalSource as FrameworkElement;
+                type = button.Name;
+                //Canvas newcanvas = new Canvas();
+                Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
+                //ICommand place = new MakeGroup(group,paintSurface,invoker,newcanvas);
+                //ICommand place = new MakeGroup(group, paintSurface, invoker, selectedElemenent);
+                ICommand place = new MakeGroup(group, paintSurface, invoker);
+                this.invoker.Execute(place);
+                grouping = true;
+            }
+
         }
 
         //undo click

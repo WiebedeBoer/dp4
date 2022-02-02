@@ -41,7 +41,7 @@ namespace tekenprogramma
                     location.height = movedElement.Height;
                     invoker.executer++;//acceskey add
                     i++;
-                    FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, movedElement, location);
+                    FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, movedElement, location, true);
                     selectedgroup.movedElements.Add(madeElement);
                 }
             }
@@ -92,7 +92,7 @@ namespace tekenprogramma
                     location.height = Convert.ToDouble(movedElement.Height) - heightOffset;
                     invoker.executer++; //acceskey add
                     i++;
-                    FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, movedElement, location);
+                    FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, movedElement, location, true);
                     selectedgroup.movedElements.Add(madeElement);
                 }
             }
@@ -124,7 +124,7 @@ namespace tekenprogramma
 
     public interface IComponent
     {
-        FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location);
+        FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location, Boolean moved);
         string Write(IWriter visitor, FrameworkElement element, Canvas paintSurface);
     }
 
@@ -146,9 +146,9 @@ namespace tekenprogramma
 
         //Note that calling ConcreteComponent which matches the current class name. 
         //This way we let the visitor know the class of the component it works with.
-        public FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location)
+        public FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location, Boolean moved)
         {
-            FrameworkElement madeElement = visitor.VisitConcreteComponentRectangle(this, invoker, selectedelement, paintSurface, location, e);
+            FrameworkElement madeElement = visitor.VisitConcreteComponentRectangle(this, invoker, selectedelement, paintSurface, location, e, moved);
             return madeElement;
         }
 
@@ -195,9 +195,9 @@ namespace tekenprogramma
         }
 
         // Same here: ConcreteComponent => ConcreteComponent
-        public FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location)
+        public FrameworkElement Accept(IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement, Location location, Boolean moved)
         {
-            FrameworkElement madeElement = visitor.VisitConcreteComponentEllipse(this, invoker, selectedelement, paintSurface, location, e);
+            FrameworkElement madeElement = visitor.VisitConcreteComponentEllipse(this, invoker, selectedelement, paintSurface, location, e, moved);
             return madeElement;
         }
 
@@ -228,17 +228,24 @@ namespace tekenprogramma
     //visitor cinterface
     public interface IVisitor
     {
-        FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e);
+        FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e, Boolean moved);
 
-        FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e);
+        FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e, Boolean moved);
     }
 
     //move visitor
     class ConcreteVisitorMove : IVisitor
     {
-        public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e)
+        public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e, Boolean moved)
         {
-            KeyNumber(element, invoker); //move selected at removed
+            KeyNumber(element, invoker); //move selected at removed 1-
+
+            //add selected to unselect
+            invoker.unselectElements.Add(element); //2b+
+            //remove from selected
+            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
+            //add to moved
+            invoker.movedElements.Add(element); //3a+
             FrameworkElement returnelement = null;
             Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
             newRectangle.AccessKey = invoker.executer.ToString();
@@ -250,14 +257,24 @@ namespace tekenprogramma
             newRectangle.Name = "Rectangle"; //attach name
             Canvas.SetLeft(newRectangle, location.x);//set left position
             Canvas.SetTop(newRectangle, location.y); //set top position          
-            invoker.drawnElements.Add(newRectangle);
+            //add new to drawn
+            invoker.drawnElements.Add(newRectangle); //1+
+            //add undo
+            invoker.unmovedElements.Add(newRectangle); //3b+
             returnelement = newRectangle;
             return returnelement;
         }
 
-        public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e)
+        public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e, Boolean moved)
         {
-            KeyNumber(element, invoker); //move selected at removed
+            KeyNumber(element, invoker); //move selected at removed 1-
+
+            //add selected to unselect
+            invoker.unselectElements.Add(element); //2b+
+            //remove from selected
+            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
+            //add to moved
+            invoker.movedElements.Add(element); //3a+
             FrameworkElement returnelement = null;
             Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
             newEllipse.AccessKey = invoker.executer.ToString();
@@ -269,7 +286,10 @@ namespace tekenprogramma
             newEllipse.Name = "Ellipse";//attach name
             Canvas.SetLeft(newEllipse, location.x);//set left position
             Canvas.SetTop(newEllipse, location.y);//set top position
-            invoker.drawnElements.Add(newEllipse);
+            //add new to drawn
+            invoker.drawnElements.Add(newEllipse); //1+
+            //add undo
+            invoker.unmovedElements.Add(newEllipse); //3b+
             returnelement = newEllipse;
             return returnelement;
         }
@@ -289,8 +309,8 @@ namespace tekenprogramma
                 inc++;
             }
             invoker.drawnElements.RemoveAt(number);
-            invoker.removedElements.Add(element);
-            invoker.movedElements.Add(element);
+            //invoker.removedElements.Add(element);
+            //invoker.movedElements.Add(element);
         }
 
     }
@@ -298,7 +318,7 @@ namespace tekenprogramma
     //resize visitor
     class ConcreteVisitorResize : IVisitor
     {
-        public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e)
+        public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e, Boolean moved)
         {
 
             //calculate size
@@ -315,7 +335,13 @@ namespace tekenprogramma
             //nlocation.width = w;
             //nlocation.height = h;
 
-            KeyNumber(element, invoker); //move selected at removed
+            KeyNumber(element, invoker); //move selected at removed 1-
+            //add selected to unselect
+            invoker.unselectElements.Add(element); //2b+
+            //remove from selected
+            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
+            //add to moved
+            invoker.movedElements.Add(element); //3a+
             FrameworkElement returnelement = null;
             Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
             newRectangle.AccessKey = invoker.executer.ToString();
@@ -327,12 +353,15 @@ namespace tekenprogramma
             newRectangle.Name = "Rectangle"; //attach name
             Canvas.SetLeft(newRectangle, location.x);
             Canvas.SetTop(newRectangle, location.y);
-            invoker.drawnElements.Add(newRectangle);
+            //add new to drawn
+            invoker.drawnElements.Add(newRectangle); //1+
+            //add undo
+            invoker.unmovedElements.Add(newRectangle); //3b+
             returnelement = newRectangle;
             return returnelement;
         }
 
-        public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e)
+        public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e, Boolean moved)
         {
 
             //calculate size
@@ -349,7 +378,15 @@ namespace tekenprogramma
             //nlocation.width = w;
             //nlocation.height = h;
 
-            KeyNumber(element, invoker); //move selected at removed
+            KeyNumber(element, invoker); //move selected at removed 1-
+
+            //add selected to unselect
+            invoker.unselectElements.Add(element); //2b+
+            //remove from selected
+            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
+            //add to moved
+            invoker.movedElements.Add(element); //3a+
+
             FrameworkElement returnelement = null;
             Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
             newEllipse.AccessKey = invoker.executer.ToString();
@@ -361,7 +398,10 @@ namespace tekenprogramma
             newEllipse.Name = "Ellipse";//attach name
             Canvas.SetLeft(newEllipse, location.x);//set left position
             Canvas.SetTop(newEllipse, location.y);//set top position
-            invoker.drawnElements.Add(newEllipse);
+            //add new to drawn
+            invoker.drawnElements.Add(newEllipse); //1+
+            //add undo
+            invoker.unmovedElements.Add(newEllipse); //3b+
             returnelement = newEllipse;
             return returnelement;
         }
@@ -381,8 +421,8 @@ namespace tekenprogramma
                 inc++;
             }
             invoker.drawnElements.RemoveAt(number);
-            invoker.removedElements.Add(element);
-            invoker.movedElements.Add(element);
+            //invoker.removedElements.Add(element);
+            //invoker.movedElements.Add(element);
         }
 
         //give smallest

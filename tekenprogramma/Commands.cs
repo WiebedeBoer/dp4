@@ -114,13 +114,13 @@ namespace tekenprogramma
             {
                 IVisitor visitor = new ConcreteVisitorMove();
                 ConcreteComponentRectangle component = new ConcreteComponentRectangle(this.location.x, this.location.y, this.location.width, this.location.height);
-                visitor.VisitConcreteComponentRectangle(component, this.invoker, this.element, this.paintSurface, this.location, this.e);
+                visitor.VisitConcreteComponentRectangle(component, this.invoker, this.element, this.paintSurface, this.location, this.e, true);
             }
             else if (this.element.Name == "Ellipse")
             {
                 IVisitor visitor = new ConcreteVisitorMove();
                 ConcreteComponentEllipse component = new ConcreteComponentEllipse(this.location.x, this.location.y, this.location.width, this.location.height);
-                visitor.VisitConcreteComponentEllipse(component, this.invoker, this.element, this.paintSurface, this.location,this.e);
+                visitor.VisitConcreteComponentEllipse(component, this.invoker, this.element, this.paintSurface, this.location,this.e, true);
             }
             this.shape.Repaint(this.invoker, this.paintSurface, false);
         }
@@ -172,13 +172,13 @@ namespace tekenprogramma
             {
                 IVisitor visitor = new ConcreteVisitorResize();
                 ConcreteComponentRectangle component = new ConcreteComponentRectangle(this.location.x, this.location.y, this.location.width, this.location.height);
-                visitor.VisitConcreteComponentRectangle(component, this.invoker, this.element, this.paintSurface, this.location, this.e);
+                visitor.VisitConcreteComponentRectangle(component, this.invoker, this.element, this.paintSurface, this.location, this.e, true);
             }
             else if (this.element.Name == "Ellipse")
             {
                 IVisitor visitor = new ConcreteVisitorResize();
                 ConcreteComponentEllipse component = new ConcreteComponentEllipse(this.location.x, this.location.y, this.location.width, this.location.height);
-                visitor.VisitConcreteComponentEllipse(component, this.invoker, this.element, this.paintSurface, this.location,this.e);
+                visitor.VisitConcreteComponentEllipse(component, this.invoker, this.element, this.paintSurface, this.location,this.e, true);
             }
             this.shape.Repaint(this.invoker,this.paintSurface, false);
         }

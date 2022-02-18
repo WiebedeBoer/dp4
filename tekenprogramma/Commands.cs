@@ -122,7 +122,7 @@ namespace tekenprogramma
                 ConcreteComponentEllipse component = new ConcreteComponentEllipse(this.location.x, this.location.y, this.location.width, this.location.height);
                 visitor.VisitConcreteComponentEllipse(component, this.invoker, this.element, this.paintSurface, this.location,this.e, true);
             }
-            this.shape.Repaint(this.invoker, this.paintSurface, false);
+            this.shape.Repaint(this.invoker, this.paintSurface);
         }
 
         public void Undo()
@@ -180,7 +180,7 @@ namespace tekenprogramma
                 ConcreteComponentEllipse component = new ConcreteComponentEllipse(this.location.x, this.location.y, this.location.width, this.location.height);
                 visitor.VisitConcreteComponentEllipse(component, this.invoker, this.element, this.paintSurface, this.location,this.e, true);
             }
-            this.shape.Repaint(this.invoker,this.paintSurface, false);
+            this.shape.Repaint(this.invoker,this.paintSurface);
         }
 
         public void Undo()
@@ -198,14 +198,14 @@ namespace tekenprogramma
     public class Select : ICommand
     {
 
-        private PointerRoutedEventArgs e;
+        private FrameworkElement element;
         private Shape shape;
         private Invoker invoker;
         private Canvas paintSurface;
 
-        public Select(Shape shape, PointerRoutedEventArgs e, Invoker invoker, Canvas paintSurface)
+        public Select(Shape shape, FrameworkElement clickedElement, Invoker invoker, Canvas paintSurface)
         {
-            this.e = e;
+            this.element = clickedElement;
             this.shape = shape;
             this.invoker = invoker;
             this.paintSurface = paintSurface;
@@ -213,22 +213,19 @@ namespace tekenprogramma
 
         public void Execute()
         {
-            this.shape.Select(this.invoker, this.e, this.paintSurface);
+            this.shape.Select(this.element, this.invoker, this.paintSurface);
         }
 
         public void Undo()
         {
-            this.shape.Deselect(this.invoker, this.e, this.paintSurface);
+            this.shape.Deselect(this.invoker, this.paintSurface);
         }
 
         public void Redo()
         {
-            this.shape.Reselect(this.invoker, this.e, this.paintSurface);
+            this.shape.Reselect(this.invoker, this.paintSurface);
         }
     }
-
-
-
 
     //class saving
     public class Saved : ICommand
@@ -350,7 +347,8 @@ namespace tekenprogramma
 
             ResizeClient resizer = new ResizeClient();
             IVisitor visitor = new ConcreteVisitorResize();
-            Group selectedgroup = this.invoker.selectedGroups.Last();
+            List<Group> Lastgroups = this.invoker.unselectGroupsList.Last();
+            Group selectedgroup = Lastgroups.Last();
             resizer.Client(selectedgroup.drawnComponents, selectedgroup.drawnElements, selectedgroup, visitor, this.invoker, this.e, this.paintSurface, this.element);
         }
 
@@ -388,7 +386,8 @@ namespace tekenprogramma
             //this.mycommand.Moving(this.invoker, this.e, this.paintSurface, this.element);
             MoveClient mover = new MoveClient();
             IVisitor visitor = new ConcreteVisitorMove();
-            Group selectedgroup = this.invoker.selectedGroups.Last();
+            List<Group> Lastgroups = this.invoker.unselectGroupsList.Last();
+            Group selectedgroup = Lastgroups.Last();
             mover.Client(selectedgroup.drawnComponents, selectedgroup.drawnElements, selectedgroup, visitor, this.invoker, this.e, this.paintSurface, this.element);
         }
 

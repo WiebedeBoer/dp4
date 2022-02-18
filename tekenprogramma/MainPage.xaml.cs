@@ -69,7 +69,7 @@ namespace tekenprogramma
                 //move
                 if (type == "Move")
                 {
-                    if (invoker.selectedGroups.Count() > 0)
+                    if (invoker.unselectGroupsList.Count() > 0)
                     {
                         MovingGroup(sender, e);
                     }
@@ -83,7 +83,7 @@ namespace tekenprogramma
                 else if (type == "Resize")
                 {
 
-                    if (invoker.selectedGroups.Count() > 0)
+                    if (invoker.unselectGroupsList.Count() > 0)
                     {
                         ResizingGroup(sender, e);
                     }
@@ -102,31 +102,7 @@ namespace tekenprogramma
                     MakeEllipse(sender, e);
                 }
             }
-            //}
-            //not selecting modus
-            //else
-            //{
-            //    selecting = false;
-            //    //move
-            //    if (type == "Move")
-            //    {
-            //        MovingShape(sender, e);
-            //    }
-            //    //resize
-            //    else if (type == "Resize")
-            //    {
-            //        ResizingShape(sender, e);
-            //    }
-            //    //make
-            //    else if (type == "Rectangle")
-            //    {
-            //        MakeRectangle(sender, e);
-            //    }
-            //    else if (type == "Elipse")
-            //    {
-            //        MakeEllipse(sender, e);
-            //    }
-            //}
+
         }
 
         //
@@ -136,8 +112,9 @@ namespace tekenprogramma
         //selecting shape
         private void Selecting(object sender, PointerRoutedEventArgs e, FrameworkElement element)
         {
-            Shape shape = new Shape(e.GetCurrentPoint(paintSurface).Position.X, e.GetCurrentPoint(paintSurface).Position.Y, 50, 50);
-            ICommand place = new Select(shape, e, this.invoker, paintSurface);
+            FrameworkElement clickedElement = e.OriginalSource as FrameworkElement;
+            Shape shape = new Shape(clickedElement.ActualOffset.X, clickedElement.ActualOffset.Y, 50, 50);
+            ICommand place = new Select(shape, clickedElement, this.invoker, paintSurface);
             this.invoker.Execute(place);
         }
 
@@ -160,47 +137,33 @@ namespace tekenprogramma
         //moving shape
         private void MovingShape(object sender, PointerRoutedEventArgs e)
         {
-            Location location = new Location();
-            location.x = e.GetCurrentPoint(paintSurface).Position.X;
-            location.y = e.GetCurrentPoint(paintSurface).Position.Y;
-            location.width = selectedElement.Width;
-            location.height = selectedElement.Height;
-            Shape shape = new Shape(location.x, location.y, location.width, location.height);
-            ICommand place = new Moving(shape, invoker, location, paintSurface, selectedElement, e);
-            this.invoker.Execute(place);
-
-            //this.strategy.shape.accept(move);
-
-            //this.invoker.Execute(moveShapeVisitor);
-            //this.strategy.shape.accept(moveShapeVisitor);
+            if (invoker.unselectElementsList.Count() > 0)
+            {
+                Location location = new Location();
+                location.x = e.GetCurrentPoint(paintSurface).Position.X;
+                location.y = e.GetCurrentPoint(paintSurface).Position.Y;
+                location.width = selectedElement.Width;
+                location.height = selectedElement.Height;
+                Shape shape = new Shape(location.x, location.y, location.width, location.height);
+                ICommand place = new Moving(shape, invoker, location, paintSurface, selectedElement, e);
+                this.invoker.Execute(place);
+            }
         }
 
         //resizing shape
         private void ResizingShape(object sender, PointerRoutedEventArgs e)
         {
-            //Location location = new Location();
-            //location.x = Convert.ToDouble(selectedElement.ActualOffset.X);
-            //location.y = Convert.ToDouble(selectedElement.ActualOffset.Y);
-            //location.width = Convert.ToDouble(selectedElement.Width);
-            //location.height = Convert.ToDouble(selectedElement.Height);
-
-            //calculate size
-            double ex = e.GetCurrentPoint(paintSurface).Position.X;
-            double ey = e.GetCurrentPoint(paintSurface).Position.Y;
-            double lw = Convert.ToDouble(selectedElement.ActualOffset.X); //set width
-            double lh = Convert.ToDouble(selectedElement.ActualOffset.Y); //set height
-            double w = ReturnSmallest(ex, lw);
-            double h = ReturnSmallest(ey, lh);
-
-            Location location = new Location();
-            location.x = Convert.ToDouble(selectedElement.ActualOffset.X);
-            location.y = Convert.ToDouble(selectedElement.ActualOffset.Y);
-            location.width = w;
-            location.height = h;
-
-            Shape shape = new Shape(location.x, location.y, location.width, location.height);
-            ICommand place = new Resize(shape, invoker, e, location, paintSurface, selectedElement);
-            this.invoker.Execute(place);
+            if (invoker.unselectElementsList.Count() > 0)
+            {
+                Location location = new Location();
+                location.x = Convert.ToDouble(selectedElement.ActualOffset.X);
+                location.y = Convert.ToDouble(selectedElement.ActualOffset.Y);
+                location.width = Convert.ToDouble(selectedElement.Width);
+                location.height = Convert.ToDouble(selectedElement.Height);
+                Shape shape = new Shape(location.x, location.y, location.width, location.height);
+                ICommand place = new Resize(shape, invoker, e, location, paintSurface, selectedElement);
+                this.invoker.Execute(place);
+            }
         }
 
         //give smallest
@@ -223,27 +186,23 @@ namespace tekenprogramma
         //moving group
         private void MovingGroup(object sender, PointerRoutedEventArgs e)
         {
-            //Shape shape = selectedShapesList.First();
-            Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
-            ICommand place = new MoveGroup(group, e, paintSurface, invoker, selectedElement);
-            this.invoker.Execute(place);
-            //type = "deselecting";
-            //selecting = false;
-            //selectedShapesList.RemoveAt(0);
-            //selectedElement = null;
+            if (invoker.unselectGroupsList.Count() > 0)
+            {
+                Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
+                ICommand place = new MoveGroup(group, e, paintSurface, invoker, selectedElement);
+                this.invoker.Execute(place);
+            }
         }
 
         //resizing group
         private void ResizingGroup(object sender, PointerRoutedEventArgs e)
         {
-            //Shape shape = selectedShapesList.First();
-            Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
-            ICommand place = new ResizeGroup(group, e, paintSurface, invoker, selectedElement);
-            this.invoker.Execute(place);
-            //type = "deselecting";
-            //selecting = false;
-            //selectedShapesList.RemoveAt(0);
-            //selectedElement = null;
+            if (invoker.unselectGroupsList.Count() > 0)
+            {
+                Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
+                ICommand place = new ResizeGroup(group, e, paintSurface, invoker, selectedElement);
+                this.invoker.Execute(place);
+            }
         }
 
         //
@@ -253,40 +212,28 @@ namespace tekenprogramma
         //move click
         private void Move_Click(object sender, RoutedEventArgs e)
         {
-            if (invoker.selectElements.Count() > 0)
-            {
                 FrameworkElement button = e.OriginalSource as FrameworkElement;
                 type = button.Name;
                 grouping = false;
                 selecting = true;
-            }
-
         }
 
         //resize click
         private void Resize_Click(object sender, RoutedEventArgs e)
         {
-            if (invoker.selectElements.Count() > 0)
-            {
                 FrameworkElement button = e.OriginalSource as FrameworkElement;
                 type = button.Name;
                 grouping = false;
                 selecting = true;
-            }
-
         }
 
         //elipse click
         private void Elipse_Click(object sender, RoutedEventArgs e)
         {
-            if (invoker.selectElements.Count() > 0)
-            {
-                FrameworkElement button = e.OriginalSource as FrameworkElement;
-                type = button.Name;
-                grouping = false;
-                selecting = false;
-            }
-
+            FrameworkElement button = e.OriginalSource as FrameworkElement;
+            type = button.Name;
+            grouping = false;
+            selecting = false;
         }
 
         //rectangle click
@@ -309,7 +256,7 @@ namespace tekenprogramma
         //group click
         private void Group_Click(object sender, RoutedEventArgs e)
         {
-            if (invoker.selectElements.Count() >0)
+            if (invoker.unselectElementsList.Count() > 0)
             {
                 FrameworkElement button = e.OriginalSource as FrameworkElement;
                 type = button.Name;

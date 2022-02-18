@@ -42,31 +42,7 @@ namespace tekenprogramma
 
         }
 
-        //public void add()
-        //{
-
-        //}
-
-        //public void remove()
-        //{
-
-        //}
-
-        //public abstract string Display(int depth, Group group);
-
-        //public abstract void Select(PointerRoutedEventArgs e, Canvas paintSurface);
-        //public abstract void Deselect(PointerRoutedEventArgs e);
-
-        //public abstract void Moving(PointerRoutedEventArgs e);
-        //public abstract void UndoMoving();
-        //public abstract void RedoMoving();
-        //public abstract void Resize(PointerRoutedEventArgs e);
-        //public abstract void UndoResize();
-        //public abstract void RedoResize();
-
-        //public abstract bool GetIfSelected(double x, double y);
-        //public abstract bool GetHandleIfSelected(double x, double y);
-
+        public abstract string Display(int depth, int maxdepth, Group group);
 
     }
 }

@@ -24,7 +24,7 @@ namespace tekenprogramma
         //The accept operation directs a call to the appropriate operation in the visitor object.
         public void Client(List<IComponent> components, List<FrameworkElement> drawnElements, Group selectedgroup, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
         {
-            invoker.removedGroups.Add(selectedgroup);
+            //invoker.removedGroups.Add(selectedgroup);
             //calculate difference in location
             double leftOffset = Convert.ToDouble(selectedelement.ActualOffset.X) - e.GetCurrentPoint(paintSurface).Position.X;
             double topOffset = Convert.ToDouble(selectedelement.ActualOffset.Y) - e.GetCurrentPoint(paintSurface).Position.Y;
@@ -42,7 +42,7 @@ namespace tekenprogramma
                     invoker.executer++;//acceskey add
                     i++;
                     FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, movedElement, location, true);
-                    selectedgroup.movedElements.Add(madeElement);
+                    //selectedgroup.movedElements.Add(madeElement);
                 }
             }
 
@@ -55,6 +55,7 @@ namespace tekenprogramma
                     submover.Client(subgroup.drawnComponents, subgroup.drawnElements, subgroup, subvisitor, invoker, e, paintSurface, selectedelement);
                 }
             }
+            /*
             //add to moved or resized
             invoker.movedGroups.Add(selectedgroup);
             //remove selected group
@@ -62,7 +63,7 @@ namespace tekenprogramma
             invoker.selectedGroups.RemoveAt(invoker.selectedGroups.Count() - 1);
 
             invoker.unmovedGroups.Add(selectedgroup);
-
+            */
             selectedgroup.Repaint(invoker, paintSurface); //repaint
         }
     }
@@ -72,7 +73,7 @@ namespace tekenprogramma
     {
         public void Client(List<IComponent> components, List<FrameworkElement> drawnElements, Group selectedgroup, IVisitor visitor, Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface, FrameworkElement selectedelement)
         {
-            invoker.removedGroups.Add(selectedgroup);
+            //invoker.removedGroups.Add(selectedgroup);
             //calculate difference in size
             double newWidth = selectedgroup.ReturnSmallest(e.GetCurrentPoint(paintSurface).Position.X, Convert.ToDouble(selectedelement.ActualOffset.X));
             double newHeight = selectedgroup.ReturnSmallest(e.GetCurrentPoint(paintSurface).Position.Y, Convert.ToDouble(selectedelement.ActualOffset.Y));
@@ -93,7 +94,7 @@ namespace tekenprogramma
                     invoker.executer++; //acceskey add
                     i++;
                     FrameworkElement madeElement = component.Accept(visitor, invoker, e, paintSurface, movedElement, location, true);
-                    selectedgroup.movedElements.Add(madeElement);
+                    //selectedgroup.movedElements.Add(madeElement);
                 }
             }
 
@@ -106,6 +107,7 @@ namespace tekenprogramma
                     subresizer.Client(subgroup.drawnComponents, subgroup.drawnElements, subgroup, subvisitor, invoker, e, paintSurface, selectedelement);
                 }
             }
+            /*
             //add to moved or resized
             invoker.movedGroups.Add(selectedgroup);
             //remove selected group
@@ -113,6 +115,7 @@ namespace tekenprogramma
             invoker.selectedGroups.RemoveAt(invoker.selectedGroups.Count() - 1);
 
             invoker.unmovedGroups.Add(selectedgroup);
+            */
 
             selectedgroup.Repaint(invoker, paintSurface);//repaint
         }
@@ -236,16 +239,40 @@ namespace tekenprogramma
     //move visitor
     class ConcreteVisitorMove : IVisitor
     {
+
+        public List<FrameworkElement> newDrawn = new List<FrameworkElement>(); //drawn elements
+        public List<FrameworkElement> newSelected = new List<FrameworkElement>(); //selected elements
+
+        private void PrepareUndo(Invoker invoker, FrameworkElement element)
+        {
+            //prepare undo
+            //fetch
+            List<FrameworkElement> fetchDrawn = invoker.undoElementsList.Last();
+            //key
+            string key = element.AccessKey;
+            foreach (FrameworkElement addElement in fetchDrawn)
+            {
+                //if not selected
+                if (addElement.AccessKey != key)
+                {
+                    newDrawn.Add(addElement); //add
+                }
+            }
+            //shuffle selected
+            newSelected = invoker.unselectElementsList.Last();
+            invoker.reselectElementsList.Add(newSelected); //2b+
+            invoker.unselectElementsList.RemoveAt(invoker.unselectElementsList.Count() - 1); //2a-
+        }
+
+        private void NewDrawn(Invoker invoker, FrameworkElement element)
+        {
+            newDrawn.Add(element);
+            invoker.undoElementsList.Add(newDrawn);
+        }
+
         public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e, Boolean moved)
         {
-            KeyNumber(element, invoker); //move selected at removed 1-
-
-            //add selected to unselect
-            invoker.unselectElements.Add(element); //2b+
-            //remove from selected
-            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
-            //add to moved
-            invoker.movedElements.Add(element); //3a+
+            PrepareUndo(invoker, element);
             FrameworkElement returnelement = null;
             Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
             newRectangle.AccessKey = invoker.executer.ToString();
@@ -257,24 +284,14 @@ namespace tekenprogramma
             newRectangle.Name = "Rectangle"; //attach name
             Canvas.SetLeft(newRectangle, location.x);//set left position
             Canvas.SetTop(newRectangle, location.y); //set top position          
-            //add new to drawn
-            invoker.drawnElements.Add(newRectangle); //1+
-            //add undo
-            invoker.unmovedElements.Add(newRectangle); //3b+
             returnelement = newRectangle;
+            NewDrawn(invoker, returnelement);
             return returnelement;
         }
 
         public FrameworkElement VisitConcreteComponentEllipse(ConcreteComponentEllipse component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e, Boolean moved)
         {
-            KeyNumber(element, invoker); //move selected at removed 1-
-
-            //add selected to unselect
-            invoker.unselectElements.Add(element); //2b+
-            //remove from selected
-            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
-            //add to moved
-            invoker.movedElements.Add(element); //3a+
+            PrepareUndo(invoker, element);
             FrameworkElement returnelement = null;
             Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
             newEllipse.AccessKey = invoker.executer.ToString();
@@ -286,38 +303,46 @@ namespace tekenprogramma
             newEllipse.Name = "Ellipse";//attach name
             Canvas.SetLeft(newEllipse, location.x);//set left position
             Canvas.SetTop(newEllipse, location.y);//set top position
-            //add new to drawn
-            invoker.drawnElements.Add(newEllipse); //1+
-            //add undo
-            invoker.unmovedElements.Add(newEllipse); //3b+
             returnelement = newEllipse;
+            NewDrawn(invoker, returnelement);
             return returnelement;
         }
 
-        //remove selected element by access key
-        public void KeyNumber(FrameworkElement element, Invoker invoker)
-        {
-            string key = element.AccessKey;
-            int inc = 0;
-            int number = 0;
-            foreach (FrameworkElement drawn in invoker.drawnElements)
-            {
-                if (drawn.AccessKey == key)
-                {
-                    number = inc;
-                }
-                inc++;
-            }
-            invoker.drawnElements.RemoveAt(number);
-            //invoker.removedElements.Add(element);
-            //invoker.movedElements.Add(element);
-        }
+
 
     }
 
     //resize visitor
     class ConcreteVisitorResize : IVisitor
     {
+        public List<FrameworkElement> newDrawn = new List<FrameworkElement>(); //drawn elements
+        public List<FrameworkElement> newSelected = new List<FrameworkElement>(); //selected elements
+        private void PrepareUndo(Invoker invoker, FrameworkElement element)
+        {
+            //prepare undo
+            //fetch
+            List<FrameworkElement> fetchDrawn = invoker.undoElementsList.Last();
+            //key
+            string key = element.AccessKey;
+            foreach (FrameworkElement addElement in fetchDrawn)
+            {
+                //if not selected
+                if (addElement.AccessKey != key)
+                {
+                    newDrawn.Add(addElement); //add
+                }
+            }
+            //shuffle selected
+            newSelected = invoker.unselectElementsList.Last();
+            invoker.reselectElementsList.Add(newSelected); //2b+
+            invoker.unselectElementsList.RemoveAt(invoker.unselectElementsList.Count() - 1); //2a-
+        }
+
+        private void NewDrawn(Invoker invoker, FrameworkElement element)
+        {
+            newDrawn.Add(element);
+            invoker.undoElementsList.Add(newDrawn);
+        }
         public FrameworkElement VisitConcreteComponentRectangle(ConcreteComponentRectangle component, Invoker invoker, FrameworkElement element, Canvas paintSurface, Location location, PointerRoutedEventArgs e, Boolean moved)
         {
 
@@ -335,13 +360,7 @@ namespace tekenprogramma
             //nlocation.width = w;
             //nlocation.height = h;
 
-            KeyNumber(element, invoker); //move selected at removed 1-
-            //add selected to unselect
-            invoker.unselectElements.Add(element); //2b+
-            //remove from selected
-            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
-            //add to moved
-            invoker.movedElements.Add(element); //3a+
+            PrepareUndo(invoker, element);
             FrameworkElement returnelement = null;
             Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
             newRectangle.AccessKey = invoker.executer.ToString();
@@ -353,11 +372,8 @@ namespace tekenprogramma
             newRectangle.Name = "Rectangle"; //attach name
             Canvas.SetLeft(newRectangle, location.x);
             Canvas.SetTop(newRectangle, location.y);
-            //add new to drawn
-            invoker.drawnElements.Add(newRectangle); //1+
-            //add undo
-            invoker.unmovedElements.Add(newRectangle); //3b+
             returnelement = newRectangle;
+            NewDrawn(invoker, returnelement);
             return returnelement;
         }
 
@@ -378,14 +394,7 @@ namespace tekenprogramma
             //nlocation.width = w;
             //nlocation.height = h;
 
-            KeyNumber(element, invoker); //move selected at removed 1-
-
-            //add selected to unselect
-            invoker.unselectElements.Add(element); //2b+
-            //remove from selected
-            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
-            //add to moved
-            invoker.movedElements.Add(element); //3a+
+            PrepareUndo(invoker, element);
 
             FrameworkElement returnelement = null;
             Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
@@ -398,31 +407,9 @@ namespace tekenprogramma
             newEllipse.Name = "Ellipse";//attach name
             Canvas.SetLeft(newEllipse, location.x);//set left position
             Canvas.SetTop(newEllipse, location.y);//set top position
-            //add new to drawn
-            invoker.drawnElements.Add(newEllipse); //1+
-            //add undo
-            invoker.unmovedElements.Add(newEllipse); //3b+
             returnelement = newEllipse;
+            NewDrawn(invoker, returnelement);
             return returnelement;
-        }
-
-        //remove selected element by access key
-        public void KeyNumber(FrameworkElement element, Invoker invoker)
-        {
-            string key = element.AccessKey;
-            int inc = 0;
-            int number = 0;
-            foreach (FrameworkElement drawn in invoker.drawnElements)
-            {
-                if (drawn.AccessKey == key)
-                {
-                    number = inc;
-                }
-                inc++;
-            }
-            invoker.drawnElements.RemoveAt(number);
-            //invoker.removedElements.Add(element);
-            //invoker.movedElements.Add(element);
         }
 
         //give smallest
@@ -446,10 +433,10 @@ namespace tekenprogramma
     {
         public async void Client(Canvas paintSurface, Invoker invoker, IWriter visitor)
         {
-            //string fileText = "";
+            string fileText = "";
             
-            //try
-            //{
+            try
+            {
                 string lines = "";
                 int i = 0;
                 //ungrouped and drawn
@@ -480,34 +467,38 @@ namespace tekenprogramma
                     }
                     i++;
                 }
+            //grouped and drawn
+            if (invoker.undoGroupsList.Count() > 0)
+            {
                 //grouped and drawn
-                foreach (Group group in invoker.drawnGroups)
+                foreach (Group group in invoker.undoGroupsList.Last())
                 {
-                    string gstr = Display(0, group, visitor, paintSurface);
+                    string gstr = group.Display(0, group.depth, group);
                     lines += gstr;
                 }
-                //create and write to file
-                Windows.Storage.StorageFolder storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
+            }
+            //create and write to file
+            Windows.Storage.StorageFolder storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
                 Windows.Storage.StorageFile sampleFile = await storageFolder.CreateFileAsync("dp4data.txt", Windows.Storage.CreationCollisionOption.ReplaceExisting);
                 await Windows.Storage.FileIO.WriteTextAsync(sampleFile, lines);
-            //}
-            ////file errors
-            //catch (System.IO.FileNotFoundException)
-            //{
-            //    fileText = "File not found.";
-            //}
-            //catch (System.IO.FileLoadException)
-            //{
-            //    fileText = "File Failed to load.";
-            //}
-            //catch (System.IO.IOException e)
-            //{
-            //    fileText = "File IO error " + e;
-            //}
-            //catch (Exception err)
-            //{
-            //    fileText = err.Message;
-            //}
+            }
+            //file errors
+            catch (System.IO.FileNotFoundException)
+            {
+                fileText = "File not found.";
+            }
+            catch (System.IO.FileLoadException)
+            {
+                fileText = "File Failed to load.";
+            }
+            catch (System.IO.IOException e)
+            {
+               fileText = "File IO error " + e;
+            }
+            catch (Exception err)
+            {
+                fileText = err.Message;
+            }
 
         }
 
@@ -515,41 +506,62 @@ namespace tekenprogramma
         public int CheckInGroup(Invoker invoker, FrameworkElement element)
         {
             int counter = 0;
-            foreach (Group group in invoker.drawnGroups)
+            List<Group> checkList = invoker.undoGroupsList.Last();
+            if (checkList.Count() > 0)
             {
-                if (group.drawnElements.Count() > 0)
+                foreach (Group group in checkList)
                 {
-                    foreach (FrameworkElement groupelement in group.drawnElements)
+                    if (group.undoElementsList.Count() > 0)
                     {
-                        if (groupelement.AccessKey == element.AccessKey)
+                        foreach (FrameworkElement groupelement in group.undoElementsList.Last())
                         {
-                            counter++;
+                            if (groupelement.AccessKey == element.AccessKey)
+                            {
+                                counter++;
+                                return counter;
+                            }
+                        }
+                    }
+                    if (group.addedGroups.Count() > 0 && counter == 0)
+                    {
+                        foreach (Group subgroup in group.addedGroups)
+                        {
+                            counter = CheckInSubGroup(subgroup, invoker, element);
+                            if (counter > 0)
+                            {
+                                return counter;
+                            }
                         }
                     }
                 }
-                CheckInSubgroup(group, element.AccessKey);
             }
             return counter;
         }
 
-        public int CheckInSubgroup(Group group, string key)
+        //check if element in sub group
+        public int CheckInSubGroup(Group group, Invoker invoker, FrameworkElement element)
         {
             int counter = 0;
-            if (group.drawnElements.Count() > 0)
+            if (group.undoElementsList.Count() > 0)
             {
-                foreach (FrameworkElement groupelement in group.drawnElements)
+                foreach (FrameworkElement groupelement in group.undoElementsList.Last())
                 {
-                    if (groupelement.AccessKey == key)
+                    if (groupelement.AccessKey == element.AccessKey)
                     {
                         counter++;
+                        return counter;
                     }
                 }
             }
-            if (group.addedGroups.Count() > 0)
+            if (group.addedGroups.Count() > 0 && counter == 0)
             {
                 foreach (Group subgroup in group.addedGroups)
                 {
-                    counter = subgroup.CheckInSubgroup(subgroup, key);
+                    counter = CheckInSubGroup(subgroup, invoker, element);
+                    if (counter > 0)
+                    {
+                        return counter;
+                    }
                 }
             }
             return counter;

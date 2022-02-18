@@ -35,8 +35,10 @@ namespace tekenprogramma
         public IComponent prevcomponent;
         public IComponent nextcomponent;
 
-        public List<FrameworkElement> movedElements = new List<FrameworkElement>();
-        public List<FrameworkElement> unmovedElements = new List<FrameworkElement>();
+        //public List<FrameworkElement> movedElements = new List<FrameworkElement>();
+        //public List<FrameworkElement> unmovedElements = new List<FrameworkElement>();
+        public List<FrameworkElement> newDrawn = new List<FrameworkElement>(); //drawn elements
+        public List<FrameworkElement> newSelected = new List<FrameworkElement>(); //selected elements
 
         //file IO
         public string fileText { get; set; }
@@ -50,54 +52,98 @@ namespace tekenprogramma
             this.height = height;
         }
 
-        // Selects the shape
-        public void Select(Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface)
+        //
+        //selecting
+        //
+
+        // Selects the shape, state 2
+        public void Select(FrameworkElement selectedElement, Invoker invoker, Canvas paintSurface)
         {
-            selectedElement = e.OriginalSource as FrameworkElement;//2af
+            //opacity
             selectedElement.Opacity = 0.6; //fill opacity
-            invoker.selectElements.Add(selectedElement); //2a+
+            //if not first selected
+            if (invoker.unselectElementsList.Count() > 0)
+            {
+                //fetch
+                List<FrameworkElement> fetchSelected = invoker.unselectElementsList.Last();
+                foreach (FrameworkElement addElement in fetchSelected)
+                {
+                    newSelected.Add(addElement); //add
+                }
+            }
+            //add
+            newSelected.Add(selectedElement);
+            invoker.unselectElementsList.Add(newSelected);
             //see if in group
             Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
             group.SelectInGroup(selectedElement, invoker);
         }
 
-        // Deselects the shape
-        public void Deselect(Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface)
+        // Deselects the shape, state 1
+        public void Deselect(Invoker invoker, Canvas paintSurface)
         {
-            selectedElement = invoker.selectElements.Last(); //2af  //er1
+            //fetch
+            List<FrameworkElement> lastRedo = invoker.unselectElementsList.Last(); //err
+            //shuffle
+            invoker.reselectElementsList.Add(lastRedo);
+            invoker.unselectElementsList.RemoveAt(invoker.unselectElementsList.Count - 1);
+            //fetch
+            selectedElement = lastRedo.Last(); //2af  
+            //opacity
             selectedElement.Opacity = 1; //fill opacity
-            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
-            invoker.unselectElements.Add(selectedElement); //2b+
             //see if in group
             Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
             group.UnselectGroup(selectedElement, invoker);
         }
 
-        // Reselect the shape
-        public void Reselect(Invoker invoker, PointerRoutedEventArgs e, Canvas paintSurface)
+        // Reselects the shape, state 2
+        public void Reselect(Invoker invoker, Canvas paintSurface)
         {
-            selectedElement = invoker.unselectElements.Last(); //2bf
-            selectedElement.Opacity = 0.6; //fill opacity
-            invoker.unselectElements.RemoveAt(invoker.unselectElements.Count() - 1); //2b-
-            invoker.selectElements.Add(selectedElement); //2a+
+            //fetch
+            List<FrameworkElement> lastUndo = invoker.reselectElementsList.Last();
+            //shuffle
+            invoker.unselectElementsList.Add(lastUndo);
+            invoker.reselectElementsList.RemoveAt(invoker.reselectElementsList.Count - 1);
+            //fetch
+            selectedElement = lastUndo.Last(); //2af  
+            //opacity
+            selectedElement.Opacity = 1; //fill opacity
             //see if in group
             Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
-            group.SelectInGroup(selectedElement, invoker);
+            group.ReselectInGroup(selectedElement, invoker);
         }
-
-
 
         //
         //repaint
         //
-        public void Repaint(Invoker invoker, Canvas paintSurface, Boolean moved)
+
+        //repaint
+        public void Repaint(Invoker invoker, Canvas paintSurface)
         {
-            paintSurface.Children.Clear();
-            foreach (FrameworkElement drawelement in invoker.drawnElements)
+            //check if undo elements 
+            if (invoker.undoElementsList.Count() > 0)
             {
-                paintSurface.Children.Add(drawelement); //add
+                //fetch drawn
+                List<FrameworkElement> PrepareDrawn = invoker.undoElementsList.Last();
+                //check if drawn elements
+                if (PrepareDrawn.Count() > 0)
+                {
+                    //clear surface
+                    paintSurface.Children.Clear();
+                    //draw surface
+                    foreach (FrameworkElement drawelement in PrepareDrawn)
+                    {
+                        paintSurface.Children.Add(drawelement); //add
+                    }
+                }
+            }
+            else
+            {
+                //clear surface
+                paintSurface.Children.Clear();
             }
         }
+
 
         //
         //creation
@@ -106,6 +152,10 @@ namespace tekenprogramma
         //create rectangle
         public void MakeRectangle(Invoker invoker, Canvas paintSurface)
         {
+            /*
+            //prepare undo
+            PrepareUndo(invoker);
+            //create
             Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
             newRectangle.AccessKey = invoker.executer.ToString();
             newRectangle.Width = width; //set width
@@ -118,7 +168,7 @@ namespace tekenprogramma
             Canvas.SetTop(newRectangle, y); //set top position 
             invoker.drawnElements.Add(newRectangle);
             Repaint(invoker, paintSurface, false); //repaint
-
+            */
             IComponent rectangle = new ConcreteComponentRectangle(x, y, width, height);
             invoker.drawnComponents.Add(rectangle);
         }
@@ -126,6 +176,10 @@ namespace tekenprogramma
         //create ellipse
         public void MakeEllipse(Invoker invoker, Canvas paintSurface)
         {
+            /*
+            //prepare undo
+            PrepareUndo(invoker);
+            //create
             Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
             newEllipse.AccessKey = invoker.executer.ToString();
             newEllipse.Width = width;
@@ -138,7 +192,7 @@ namespace tekenprogramma
             Canvas.SetTop(newEllipse, y);//set top position   
             invoker.drawnElements.Add(newEllipse);
             Repaint(invoker, paintSurface,  false); //repaint
-
+            */
             IComponent ellipse = new ConcreteComponentEllipse(x, y, width, height);
             invoker.drawnComponents.Add(ellipse);
         }
@@ -150,11 +204,14 @@ namespace tekenprogramma
         //undo create
         public void Remove(Invoker invoker, Canvas paintSurface)
         {
-            //remove previous
-            prevelement = invoker.drawnElements.Last();
-            invoker.removedElements.Add(prevelement);
-            invoker.drawnElements.RemoveAt(invoker.drawnElements.Count() - 1);
-            Repaint(invoker, paintSurface, false); //repaint
+
+            //fetch
+            List<FrameworkElement> lastRedo = invoker.undoElementsList.Last();
+            //shuffle
+            invoker.redoElementsList.Add(lastRedo);
+            invoker.undoElementsList.RemoveAt(invoker.undoElementsList.Count - 1);
+            //repaint surface
+            Repaint(invoker, paintSurface);
 
             prevcomponent = invoker.drawnComponents.Last();
             invoker.removedComponents.Add(prevcomponent);
@@ -164,11 +221,13 @@ namespace tekenprogramma
         //redo create
         public void Add(Invoker invoker, Canvas paintSurface)
         {
-            //create next
-            nextelement = invoker.removedElements.Last();
-            invoker.drawnElements.Add(nextelement);
-            invoker.removedElements.RemoveAt(invoker.removedElements.Count() - 1);
-            Repaint(invoker, paintSurface, false); //repaint
+            //fetch
+            List<FrameworkElement> lastUndo = invoker.redoElementsList.Last();
+            //shuffle
+            invoker.undoElementsList.Add(lastUndo);
+            invoker.redoElementsList.RemoveAt(invoker.redoElementsList.Count - 1);
+            //repaint surface
+            Repaint(invoker, paintSurface);
 
             nextcomponent = invoker.removedComponents.Last();
             invoker.drawnComponents.Add(nextcomponent);
@@ -182,14 +241,24 @@ namespace tekenprogramma
         public FrameworkElement Moving(Invoker invoker, Canvas paintSurface, Location location, FrameworkElement clickedelement)
         {
             FrameworkElement returnelement = null;
-            //remove selected element from drawn
-            KeyNumber(clickedelement, invoker); //1-
-            //add selected to unselect
-            invoker.unselectElements.Add(clickedelement); //2b+
-            //remove from selected
-            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
-            //add to moved
-            invoker.movedElements.Add(clickedelement); //3a+
+            //prepare undo
+            //fetch
+            List<FrameworkElement> fetchDrawn = invoker.undoElementsList.Last();
+            //key
+            string key = clickedelement.AccessKey;
+            foreach (FrameworkElement addElement in fetchDrawn)
+            {
+                //if not selected
+                if (addElement.AccessKey != key)
+                {
+                    newDrawn.Add(addElement); //add
+                }
+            }
+            //shuffle selected
+            newSelected = invoker.unselectElementsList.Last();
+            invoker.reselectElementsList.Add(newSelected); //2b+
+            invoker.unselectElementsList.RemoveAt(invoker.unselectElementsList.Count() - 1); //2a-
+            //create at new location
             if (clickedelement.Name == "Rectangle")
             {
                 Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
@@ -201,11 +270,10 @@ namespace tekenprogramma
                 newRectangle.Fill = brush; //fill color
                 newRectangle.Name = "Rectangle"; //attach name
                 Canvas.SetLeft(newRectangle, location.x);//set left position
-                Canvas.SetTop(newRectangle, location.y); //set top position          
-                //add new to drawn
-                invoker.drawnElements.Add(newRectangle); //1+
-                //add undo
-                invoker.unmovedElements.Add(newRectangle); //3b+
+                Canvas.SetTop(newRectangle, location.y); //set top position
+                //add
+                newDrawn.Add(newRectangle);
+                invoker.undoElementsList.Add(newDrawn);
                 returnelement = newRectangle;
             }
             else if (clickedelement.Name == "Ellipse")
@@ -220,77 +288,46 @@ namespace tekenprogramma
                 newEllipse.Name = "Ellipse";//attach name
                 Canvas.SetLeft(newEllipse, location.x);//set left position
                 Canvas.SetTop(newEllipse, location.y);//set top position
-                //add new to drawn
-                invoker.drawnElements.Add(newEllipse); //1+
-                //add undo
-                invoker.unmovedElements.Add(newEllipse); //3b+
+                //add
+                newDrawn.Add(newEllipse);
+                invoker.undoElementsList.Add(newDrawn);
                 returnelement = newEllipse;
             }
-            //this.movedElements.Add(returnelement);
             //repaint surface
-            Repaint(invoker, paintSurface, true);
+            Repaint(invoker, paintSurface);
             return returnelement;
-        }
-
-        //remove selected element by access key
-        public void KeyNumber(FrameworkElement element, Invoker invoker)
-        {
-            string key = element.AccessKey;
-            int inc = 0;
-            int number = 0;
-            foreach (FrameworkElement drawn in invoker.drawnElements)
-            {
-                if (drawn.AccessKey == key)
-                {
-                    number = inc;
-                }
-                inc++;
-            }
-            invoker.drawnElements.RemoveAt(number);
-            //invoker.removedElements.Add(element);
-            //invoker.movedElements.Add(element);
         }
 
         //move back element
         public void MoveBack(Invoker invoker, Canvas paintSurface)
         {
+            //fetch
+            List<FrameworkElement> lastRedo = invoker.undoElementsList.Last();
+            //shuffle
+            invoker.redoElementsList.Add(lastRedo);
+            invoker.undoElementsList.RemoveAt(invoker.undoElementsList.Count - 1);
             //shuffle unselected
-            prevelement = invoker.movedElements.Last();
-            invoker.unselectElements.RemoveAt(invoker.unselectElements.Count() - 1); //2b- //err
-            invoker.selectElements.Add(prevelement); //2a+
-            //shuffle moved
-            nextelement = invoker.unmovedElements.Last();
-            invoker.movedElements.RemoveAt(invoker.movedElements.Count() - 1); //3a-
-            invoker.unmovedElements.RemoveAt(invoker.unmovedElements.Count() - 1); //3b-
-            //add redo
-            invoker.undoElements.Add(nextelement); //4a+
-            invoker.redoElements.Add(prevelement); //4b+
-            //remove and add to drawn
-            KeyNumber(nextelement, invoker); //1-
-            invoker.drawnElements.Add(prevelement); //1+
+            newSelected = invoker.reselectElementsList.Last();
+            invoker.unselectElementsList.Add(newSelected); //2a+
+            invoker.reselectElementsList.RemoveAt(invoker.reselectElementsList.Count() - 1); //2b-
             //repaint surface
-            Repaint(invoker, paintSurface, false);
+            Repaint(invoker, paintSurface);
         }
 
         //move back element
         public void MoveAgain(Invoker invoker, Canvas paintSurface)
         {
+            //fetch
+            List<FrameworkElement> lastUndo = invoker.redoElementsList.Last();
+            //shuffle
+            invoker.undoElementsList.Add(lastUndo);
+            invoker.redoElementsList.RemoveAt(invoker.redoElementsList.Count - 1);
             //shuffle selected
-            nextelement = invoker.undoElements.Last();
-            invoker.unselectElements.Add(nextelement); //2b+
-            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
-            //shuffle moved
-            prevelement = invoker.redoElements.Last();
-            invoker.movedElements.Add(prevelement); //3a+
-            invoker.unmovedElements.Add(nextelement); //3b+
-            //undo redo
-            invoker.undoElements.RemoveAt(invoker.undoElements.Count() - 1); ; //4a-
-            invoker.redoElements.RemoveAt(invoker.redoElements.Count() - 1); ; //4b-
-            //remove and add to drawn
-            KeyNumber(prevelement, invoker); //1-
-            invoker.drawnElements.Add(nextelement); //1+
+            newSelected = invoker.unselectElementsList.Last();
+            invoker.reselectElementsList.Add(newSelected); //2b+
+            invoker.unselectElementsList.RemoveAt(invoker.unselectElementsList.Count() - 1); //2a-
             //repaint surface
-            Repaint(invoker, paintSurface, false);
+            Repaint(invoker, paintSurface);
         }
 
         //
@@ -325,54 +362,67 @@ namespace tekenprogramma
         public FrameworkElement Resize(Invoker invoker, PointerRoutedEventArgs e, FrameworkElement clickedelement, Canvas paintSurface, Location location)
         {
             FrameworkElement returnelement = null;
-            //remove selected element from drawn
-            KeyNumber(clickedelement, invoker); //1-
-            //add selected to unselect
-            invoker.unselectElements.Add(clickedelement); //2b+
-            //remove from selected
-            invoker.selectElements.RemoveAt(invoker.selectElements.Count() - 1); //2a-
-            //add to moved
-            invoker.movedElements.Add(clickedelement); //3a+
+            //prepare undo
+            //fetch
+            List<FrameworkElement> fetchDrawn = invoker.undoElementsList.Last();
+            //key
+            string key = clickedelement.AccessKey;
+            foreach (FrameworkElement addElement in fetchDrawn)
+            {
+                //if not selected
+                if (addElement.AccessKey != key)
+                {
+                    newDrawn.Add(addElement); //add
+                }
+            }
+            //shuffle selected
+            newSelected = invoker.unselectElementsList.Last();
+            invoker.reselectElementsList.Add(newSelected); //2b+
+            invoker.unselectElementsList.RemoveAt(invoker.unselectElementsList.Count() - 1); //2a-
+            //calculate size
+            double ex = e.GetCurrentPoint(paintSurface).Position.X;
+            double ey = e.GetCurrentPoint(paintSurface).Position.Y;
+            double lw = Convert.ToDouble(clickedelement.ActualOffset.X); //set width
+            double lh = Convert.ToDouble(clickedelement.ActualOffset.Y); //set height
+            double w = ReturnSmallest(ex, lw);
+            double h = ReturnSmallest(ey, lh);
             //create at new size
             if (clickedelement.Name == "Rectangle")
             {
                 Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
                 newRectangle.AccessKey = invoker.executer.ToString();
-                newRectangle.Width = location.width; //set width
-                newRectangle.Height = location.height; //set height     
+                newRectangle.Width = w; //set width
+                newRectangle.Height = h; //set height     
                 SolidColorBrush brush = new SolidColorBrush(); //brush
                 brush.Color = Windows.UI.Colors.Yellow; //standard brush color is blue
                 newRectangle.Fill = brush; //fill color
                 newRectangle.Name = "Rectangle"; //attach name
-                Canvas.SetLeft(newRectangle, location.x);
-                Canvas.SetTop(newRectangle, location.y);
-                //add to drawn
-                invoker.drawnElements.Add(newRectangle); //1+
-                //add undo
-                invoker.unmovedElements.Add(newRectangle); //3b+
+                Canvas.SetLeft(newRectangle, lw); //set left position
+                Canvas.SetTop(newRectangle, lh);//set top position
+                //add
+                newDrawn.Add(newRectangle);
+                invoker.undoElementsList.Add(newDrawn);
                 returnelement = newRectangle;
             }
             else if (clickedelement.Name == "Ellipse")
             {
                 Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
                 newEllipse.AccessKey = invoker.executer.ToString();
-                newEllipse.Width = location.width; //set width
-                newEllipse.Height = location.height; //set height 
+                newEllipse.Width = w; //set width
+                newEllipse.Height = h; //set height 
                 SolidColorBrush brush = new SolidColorBrush();//brush
                 brush.Color = Windows.UI.Colors.Yellow;//standard brush color is blue
                 newEllipse.Fill = brush;//fill color
                 newEllipse.Name = "Ellipse";//attach name
-                Canvas.SetLeft(newEllipse, location.x);//set left position
-                Canvas.SetTop(newEllipse, location.y);//set top position
-                //add to drawn
-                invoker.drawnElements.Add(newEllipse); //1+
-                //add undo
-                invoker.unmovedElements.Add(newEllipse); //3b+
+                Canvas.SetLeft(newEllipse, lw);//set left position
+                Canvas.SetTop(newEllipse, lh);//set top position
+                //add
+                newDrawn.Add(newEllipse);
+                invoker.undoElementsList.Add(newDrawn);
                 returnelement = newEllipse;
             }
-            //this.movedElements.Add(returnelement);
             //repaint surface
-            Repaint(invoker, paintSurface, true);
+            Repaint(invoker, paintSurface);
             return returnelement;
         }
 
@@ -394,16 +444,61 @@ namespace tekenprogramma
         public int CheckInGroup(Invoker invoker, FrameworkElement element)
         {
             int counter = 0;
-            foreach (Group group in invoker.drawnGroups)
+            List<Group> checkList = invoker.undoGroupsList.Last();
+            if (checkList.Count() > 0)
             {
-                if (group.drawnElements.Count() > 0)
+                foreach (Group group in checkList)
                 {
-                    foreach (FrameworkElement groupelement in group.drawnElements)
+                    if (group.undoElementsList.Count() > 0)
                     {
-                        if (groupelement.AccessKey == element.AccessKey)
+                        foreach (FrameworkElement groupelement in group.undoElementsList.Last())
                         {
-                            counter++;
+                            if (groupelement.AccessKey == element.AccessKey)
+                            {
+                                counter++;
+                                return counter;
+                            }
                         }
+                    }
+                    if (group.addedGroups.Count() > 0 && counter == 0)
+                    {
+                        foreach (Group subgroup in group.addedGroups)
+                        {
+                            counter = CheckInSubGroup(subgroup, invoker, element);
+                            if (counter > 0)
+                            {
+                                return counter;
+                            }
+                        }
+                    }
+                }
+            }
+            return counter;
+        }
+
+        //check if element in sub group
+        public int CheckInSubGroup(Group group, Invoker invoker, FrameworkElement element)
+        {
+            int counter = 0;
+            if (group.undoElementsList.Count() > 0)
+            {
+                foreach (FrameworkElement groupelement in group.undoElementsList.Last())
+                {
+                    if (groupelement.AccessKey == element.AccessKey)
+                    {
+                        counter++;
+                        return counter;
+                    }
+                }
+            }
+            if (group.addedGroups.Count() > 0 && counter == 0)
+            {
+                foreach (Group subgroup in group.addedGroups)
+                {
+                    counter = CheckInSubGroup(subgroup, invoker, element);
+                    if (counter > 0)
+                    {
+                        return counter;
                     }
                 }
             }
@@ -481,39 +576,34 @@ namespace tekenprogramma
         {
             //clear previous canvas
             paintSurface.Children.Clear();
-            //clear invoker
-            invoker.drawnElements.Clear();
-            invoker.removedElements.Clear();
-            invoker.unmovedElements.Clear();
-            invoker.movedElements.Clear();
-            invoker.selectElements.Clear();
-            invoker.unselectElements.Clear();
-            invoker.undoElements.Clear();
-            invoker.redoElements.Clear();
-            invoker.drawnGroups.Clear();
-            invoker.removedGroups.Clear();
-            invoker.movedGroups.Clear();
-            invoker.unmovedGroups.Clear();
-            invoker.selectedGroups.Clear();
-            invoker.unselectedGroups.Clear();
-            invoker.undoGroups.Clear();
-            invoker.redoGroups.Clear();
+            //clear elements
+            invoker.undoElementsList.Clear();
+            invoker.redoElementsList.Clear();
+            invoker.unselectElementsList.Clear();
+            invoker.reselectElementsList.Clear();
+            //clear invoker groups
+            invoker.undoGroupsList.Clear();
+            invoker.redoGroupsList.Clear();
+            invoker.unselectGroupsList.Clear();
+            invoker.reselectGroupsList.Clear();
+            //clear invoker numbers
             invoker.executer = 0;
             invoker.counter = 0;
             //read file
             Windows.Storage.StorageFolder storageFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
-            Windows.Storage.StorageFile saveFile = await storageFolder.GetFileAsync("dp4data.txt");
+            Windows.Storage.StorageFile saveFile = await storageFolder.GetFileAsync("dp3data.txt");
             string text = await Windows.Storage.FileIO.ReadTextAsync(saveFile);
-            //load shapes
+            //load shapes and groups
             string[] readText = Regex.Split(text, "\\n+");
-            int i = 0;
-            //make groups and shapes
+            int maxtab = 0;
+            int tabslength = 0;
+            int shapescount = 0;
+            //make shapes
             foreach (string s in readText)
             {
+                //if the line contains something
                 if (s.Length > 2)
                 {
-                    invoker.executer++;
-                    i++;
                     string notabs = s.Replace("\t", "");
                     string[] line = Regex.Split(notabs, "\\s+");
                     //remake shapes
@@ -522,155 +612,82 @@ namespace tekenprogramma
                         Shape shape = new Shape(Convert.ToDouble(line[1]), Convert.ToDouble(line[2]), Convert.ToDouble(line[3]), Convert.ToDouble(line[4]));
                         ICommand place = new MakeEllipses(shape, invoker, paintSurface);
                         invoker.Execute(place);
+                        shapescount++;
                     }
                     else if (line[0] == "rectangle")
                     {
                         Shape shape = new Shape(Convert.ToDouble(line[1]), Convert.ToDouble(line[2]), Convert.ToDouble(line[3]), Convert.ToDouble(line[4]));
                         ICommand place = new MakeRectangles(shape, invoker, paintSurface);
                         invoker.Execute(place);
+                        shapescount++;
                     }
-                    //remake groups
-                    else if (line[0] == "group")
+                    //calculate maximum tabs in lines
+                    tabslength = (s.Length - notabs.Length);
+                    if (tabslength > maxtab)
                     {
-                        FrameworkElement selectedElement = null;
-                        Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
-                        ICommand place = new MakeGroup(group, paintSurface, invoker);
-                        invoker.Execute(place);
+                        maxtab = tabslength;
                     }
                 }
             }
-            int j = 0; //line increment
-            int g = 0;//group increment
-            //re add elements to groups
-            foreach (string s in readText)
+            //loop through and make groups, start at deepest
+            for (int tabdepth = maxtab; tabdepth >= 0; tabdepth--)
             {
-                if (s.Length > 2)
+                //select shapes and make groups, start at deepest shapes
+                int tabsremovedlength = 0;
+                int tabsprevious = 0;
+                int allshapescount = 0;
+                int thingsInGroup = 0;
+                int skipInGroup = 0;
+                foreach (string st in readText)
                 {
-                    string notabs = s.Replace("\t", "");
-                    string[] line = Regex.Split(notabs, "\\s+");
-                    if (line[0] == "group")
-                    {
-                        GetGroupElements(readText, j, Convert.ToInt32(line[1]), g, invoker);
-                        g++;
-                    }
-                    j++;
-                }
-            }
-            int maingroup = 0; //main group increment
-            int k = 0; //line increment
-            //remake subgroups and add elements
-            foreach (string s in readText)
-            {
-                if (s.Length > 2)
-                {
-                    string[] line = Regex.Split(s, "\\s+");
-                    int tabcount = s.Length - s.Replace("/", "").Length;
+                    //prepare lines
+                    string notabsline = st.Replace("\t", "");
+                    string[] splitline = Regex.Split(notabsline, "\\s+");
+                    tabsremovedlength = (st.Length - notabsline.Length);
 
-                    //if (s[0] != '\t')
-                    if (tabcount < 0)
+                    //fetch group
+                    if (splitline[0] == "group" && tabsremovedlength == tabdepth)
                     {
-                        if (line[0] == "group")
+                        thingsInGroup = Convert.ToInt32(splitline[1]);
+                        tabsprevious = tabdepth;
+                    }
+                    //skip if subgroup
+                    else if (splitline[0] == "group" && tabsremovedlength > tabdepth)
+                    {
+                        int convertedSkips = Convert.ToInt32(splitline[1]);
+                        skipInGroup = skipInGroup + (convertedSkips - 1);
+                    }
+                    //select the elements
+                    else if (splitline[0] == "ellipse" || splitline[0] == "rectangle")
+                    {
+
+                        //decrement skip in group
+                        if (skipInGroup >= 1)
                         {
-                            GetSubGroups(readText, maingroup, 0, k, k + Convert.ToInt32(line[1]), invoker);
+                            skipInGroup--;
                         }
+                        else if (skipInGroup == 0 && thingsInGroup >= 1 && tabsremovedlength > tabsprevious)
+                        {
+                            //select the element
+                            FrameworkElement clickedElement = invoker.undoElementsList[allshapescount].Last();
+                            Shape shape = new Shape(clickedElement.ActualOffset.X, clickedElement.ActualOffset.Y, 50, 50);
+                            ICommand place = new Select(shape, clickedElement, invoker, paintSurface);
+                            invoker.Execute(place);
+                            thingsInGroup--;
+                            //make the group
+                            if (thingsInGroup == 0)
+                            {
+                                Group group = new Group(0, 0, 0, 0, "group", 0, 0, paintSurface, invoker, selectedElement);
+                                ICommand gplace = new MakeGroup(group, paintSurface, invoker);
+                                invoker.Execute(gplace);
+                                tabsprevious = 0;
+                            }
+                        }
+                        //increment shape number
+                        allshapescount++;
                     }
-                    maingroup++;
-                }
-                k++;
-            }
-        }
-
-        //load ellipse
-        public void GetEllipse(String lines, Canvas paintSurface, Invoker invoker)
-        {
-            string[] line = Regex.Split(lines, "\\s+");
-
-            double x = Convert.ToDouble(line[1]);
-            double y = Convert.ToDouble(line[2]);
-            double width = Convert.ToDouble(line[3]);
-            double height = Convert.ToDouble(line[4]);
-
-            Ellipse newEllipse = new Ellipse(); //instance of new ellipse shape
-            newEllipse.AccessKey = invoker.executer.ToString();
-            newEllipse.Width = width;
-            newEllipse.Height = height;
-            SolidColorBrush brush = new SolidColorBrush();//brush
-            brush.Color = Windows.UI.Colors.Blue;//standard brush color is blue
-            newEllipse.Fill = brush;//fill color
-            newEllipse.Name = "Ellipse";//attach name
-            Canvas.SetLeft(newEllipse, x);//set left position
-            Canvas.SetTop(newEllipse, y);//set top position
-            paintSurface.Children.Add(newEllipse);
-            invoker.drawnElements.Add(newEllipse);
-        }
-
-        //load rectangle
-        public void GetRectangle(String lines, Canvas paintSurface, Invoker invoker)
-        {
-            string[] line = Regex.Split(lines, "\\s+");
-
-            double x = Convert.ToDouble(line[1]);
-            double y = Convert.ToDouble(line[2]);
-            double width = Convert.ToDouble(line[3]);
-            double height = Convert.ToDouble(line[4]);
-
-            Rectangle newRectangle = new Rectangle(); //instance of new rectangle shape
-            newRectangle.AccessKey = invoker.executer.ToString();
-            newRectangle.Width = width; //set width
-            newRectangle.Height = height; //set height     
-            SolidColorBrush brush = new SolidColorBrush(); //brush
-            brush.Color = Windows.UI.Colors.Blue; //standard brush color is blue
-            newRectangle.Fill = brush; //fill color
-            newRectangle.Name = "Rectangle"; //attach name
-            Canvas.SetLeft(newRectangle, x); //set left position
-            Canvas.SetTop(newRectangle, y); //set top position 
-            paintSurface.Children.Add(newRectangle);
-            invoker.drawnElements.Add(newRectangle);
-        }
-
-        //re attach element to group
-        public void GetGroupElements(string[] readText, int start, int stop, int group, Invoker invoker)
-        {
-            Group attachgroup = invoker.drawnGroups[group];
-            for (int i = start; i < stop; i++)
-            {
-                FrameworkElement elm = invoker.drawnElements[i];
-                attachgroup.drawnElements.Add(elm);
-            }
-
-        }
-
-        //re attach subgroups to group
-        public void GetSubGroups(string[] readText, int group, int depth, int start, int stop, Invoker invoker)
-        {
-            Group maingroup = invoker.drawnGroups[group];
-            while (start < stop)
-            {
-                string s = readText[start];
-                string notabs = s.Replace("\t", "");
-                string tab = "\t";
-                int tablength = tab.Length;
-                int notablength = notabs.Length;
-                int slength = s.Length;
-                int subdepth = (slength - notablength) / tablength;
-
-                if (subdepth == (depth + 1))
-                {
-                    string[] line = Regex.Split(notabs, "\\s+");
-                    if (line[0] == "group")
-                    {
-                        group++;
-                        Group subgroup = invoker.drawnGroups[group];
-                        maingroup.addedGroups.Add(subgroup);
-                        invoker.drawnGroups.RemoveAt(group);
-
-                        GetSubGroups(readText, group, depth + 1, start, start + Convert.ToInt32(line[1]), invoker);
-                    }
-                    start++;
                 }
             }
         }
-
     }
-
 }
